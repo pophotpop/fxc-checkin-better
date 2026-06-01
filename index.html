@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>范鑫澄成长记录打卡</title>
+<style>
+:root{
+  --pri:#FF7043;--sec:#FFB300;--green:#26C97B;--blue:#2196F3;--purple:#9C27B0;
+  --teal:#00BCD4;--red:#F44336;--bg:#FFF8F0;--card:#fff;--text:#222;--sub:#888;
+  --nav-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);color:var(--text);padding-bottom:calc(var(--nav-h)+16px)}
+
+/* ===== TOP NAV ===== */
+.top-nav{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #f0e8e0;display:flex;align-items:center;height:var(--nav-h);padding:0 4px}
+.top-nav .nav-logo{display:flex;align-items:center;gap:6px;padding:0 8px;flex-shrink:0}
+.top-nav .nav-logo img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--pri)}
+.top-nav .nav-logo span{font-size:14px;font-weight:700;color:var(--pri);white-space:nowrap}
+.top-nav .nav-tabs{display:flex;overflow-x:auto;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.top-nav .nav-tabs::-webkit-scrollbar{display:none}
+.top-nav .nav-tab{flex-shrink:0;padding:6px 12px;font-size:13px;font-weight:600;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;transition:all .2s}
+.top-nav .nav-tab.active{color:var(--pri);border-bottom-color:var(--pri)}
+.top-nav .lock-btn{flex-shrink:0;background:var(--pri);color:#fff;border:none;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px}
+.top-nav .lock-btn.open{background:var(--green)}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:#fff;border-top:1px solid #f0e8e0;display:flex;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.08)}
+.bottom-nav .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-size:10px;font-weight:600;color:var(--sub);transition:color .2s}
+.bottom-nav .bn-item.active{color:var(--pri)}
+.bottom-nav .bn-item .bn-icon{font-size:20px;line-height:1}
+
+/* ===== HERO ===== */
+.hero{background:linear-gradient(135deg,#FF7043,#FFB300);padding:20px 16px 28px;text-align:center;position:relative}
+.hero .mode-badge{display:inline-block;background:rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;margin-bottom:10px;backdrop-filter:blur(4px)}
+.hero .mode-badge.admin{background:rgba(38,201,123,.4)}
+.hero .hero-avatar{width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.hero .hero-name{font-size:20px;font-weight:800;color:#fff;margin-top:8px;text-shadow:0 1px 4px rgba(0,0,0,.2)}
+.hero .hero-sub{font-size:12px;color:rgba(255,255,255,.85);margin-top:2px}
+
+/* ===== SCORE BOARD ===== */
+.score-board{margin:-20px 14px 14px;background:var(--card);border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.1);padding:18px 14px 14px}
+.score-main{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.score-big{text-align:center}
+.score-big .num{font-size:56px;font-weight:900;color:var(--pri);line-height:1}
+.score-big .lbl{font-size:12px;color:var(--sub);margin-top:2px}
+.score-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;margin-left:14px}
+.score-mini{background:#FFF3E0;border-radius:12px;padding:8px 10px;text-align:center}
+.score-mini .mn{font-size:20px;font-weight:800;color:var(--pri)}
+.score-mini .ml{font-size:10px;color:var(--sub);margin-top:1px}
+.score-mini:nth-child(2){background:#E8F5E9}.score-mini:nth-child(2) .mn{color:var(--green)}
+.score-mini:nth-child(3){background:#E3F2FD}.score-mini:nth-child(3) .mn{color:var(--blue)}
+.score-mini:nth-child(4){background:#F3E5F5}.score-mini:nth-child(4) .mn{color:var(--purple)}
+
+/* ===== STREAK ===== */
+.streak-section{padding:0 14px 14px}
+.streak-title{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px}
+.streak-bar{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.streak-bar::-webkit-scrollbar{display:none}
+.streak-day{flex-shrink:0;width:36px;text-align:center;cursor:pointer}
+.streak-day .sd-num{font-size:11px;color:var(--sub);margin-bottom:3px}
+.streak-day .sd-dot{width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;transition:all .2s}
+.streak-day.pass .sd-dot{background:var(--green);color:#fff}
+.streak-day.today-dot .sd-dot{background:var(--pri);color:#fff;box-shadow:0 2px 8px rgba(255,112,67,.4)}
+.streak-day.selected .sd-dot{box-shadow:0 0 0 3px var(--pri);background:#fff;color:var(--pri)}
+
+/* ===== CHART SECTION ===== */
+.chart-card{background:var(--card);border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin:0 14px 14px;padding:14px}
+.chart-card .chart-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.week-chart{display:flex;align-items:flex-end;gap:8px;height:80px}
+.wc-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.wc-bar-bg{width:100%;flex:1;background:#f5f5f5;border-radius:6px;position:relative;overflow:hidden;min-height:0}
+.wc-bar-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--pri),var(--sec));border-radius:6px;transition:height .5s}
+.wc-bar-fill.today{background:linear-gradient(to top,var(--green),#26C97B)}
+.wc-label{font-size:10px;color:var(--sub);white-space:nowrap}
+.wc-score{font-size:10px;font-weight:700;color:var(--text)}
+
+/* ===== SECTION ===== */
+.section{padding:0 14px 14px;scroll-margin-top:calc(var(--nav-h)+4px)}
+.section-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.section-header .sh-icon{font-size:22px}
+.section-header .sh-title{font-size:16px;font-weight:800;flex:1}
+.section-header .sh-pts{font-size:13px;font-weight:700;color:var(--pri);background:#FFF3E0;border-radius:20px;padding:2px 10px}
+
+/* ===== TASK ITEMS ===== */
+.task-item{display:flex;align-items:center;background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:2px solid transparent;transition:all .2s}
+.task-item.clickable{cursor:pointer}
+.task-item.done{border-color:var(--green);background:#F0FFF8}
+.task-item .ti-check{width:26px;height:26px;border-radius:50%;border:2.5px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .2s}
+.task-item.done .ti-check{background:var(--green);border-color:var(--green);color:#fff}
+.task-item .ti-body{flex:1;margin-left:11px}
+.task-item .ti-name{font-size:14px;font-weight:600}
+.task-item .ti-desc{font-size:11px;color:var(--sub);margin-top:2px;line-height:1.4}
+.task-item .ti-pts{font-size:15px;font-weight:700;color:var(--pri);flex-shrink:0}
+.task-item.done .ti-pts{color:var(--green)}
+
+/* ===== SUBMIT ===== */
+.submit-wrap{text-align:center;margin:12px 0 4px}
+.submit-btn{background:linear-gradient(135deg,var(--pri),var(--sec));color:#fff;border:none;border-radius:50px;padding:13px 44px;font-size:16px;font-weight:700;box-shadow:0 4px 16px rgba(255,112,67,.35);cursor:pointer;transition:transform .1s}
+.submit-btn:active{transform:scale(.96)}
+.submit-btn:disabled{opacity:.5;background:#ccc;box-shadow:none;cursor:not-allowed}
+.submitted-badge{text-align:center;background:var(--card);border-radius:14px;padding:10px;border:2px solid var(--green);margin:8px 0}
+.submitted-badge .sb-score{font-size:24px;font-weight:800;color:var(--green)}
+.submitted-badge .sb-lbl{font-size:11px;color:var(--sub)}
+
+/* ===== DATE BAR ===== */
+.date-bar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:12px;padding:8px 14px;margin:0 14px 14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.date-bar .db-lbl{font-size:13px;font-weight:600}
+.date-bar input[type=date]{border:none;outline:none;font-size:13px;color:var(--blue);background:transparent;cursor:pointer}
+.date-bar .db-today{background:var(--pri);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600}
+
+/* ===== HISTORY ===== */
+.history-btn{display:block;width:100%;background:transparent;border:2px solid var(--blue);color:var(--blue);border-radius:50px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;margin-bottom:8px}
+.history-list{display:none}
+.history-list.open{display:block}
+.history-row{display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px solid #f5f5f5;font-size:12px}
+.hr-date{color:var(--sub)}.hr-score{font-weight:700;color:var(--pri)}.hr-detail{color:var(--green);font-size:11px}
+
+/* ===== SHOP ===== */
+.shop-balance{text-align:center;padding:6px;margin-bottom:12px;font-size:13px;color:var(--sub)}
+.shop-balance b{color:var(--purple);font-size:22px}
+.shop-cat-title{font-size:12px;color:var(--sub);font-weight:700;margin:12px 0 6px;padding-left:2px;letter-spacing:.5px}
+.shop-item{display:flex;align-items:center;background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.shop-item.locked{opacity:.5}
+.shop-item .si-emoji{font-size:24px;flex-shrink:0}
+.shop-item .si-body{flex:1;margin-left:11px}
+.shop-item .si-name{font-size:13px;font-weight:600}
+.shop-item .si-rule{font-size:11px;color:var(--sub);margin-top:2px;line-height:1.4}
+.shop-item .si-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:8px}
+.shop-item .si-pts{font-size:16px;font-weight:800;color:var(--purple)}
+.shop-item .si-pts-lbl{font-size:10px;color:var(--sub)}
+.redeem-btn{background:var(--pri);color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.redeem-btn.locked{background:#ccc;cursor:not-allowed}
+.edit-pts-btn{background:var(--teal);color:#fff;border:none;border-radius:20px;padding:5px 10px;font-size:11px;cursor:pointer;display:none}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);background:rgba(0,0,0,.82);color:#fff;border-radius:16px;padding:13px 22px;font-size:15px;font-weight:600;text-align:center;z-index:999;opacity:0;pointer-events:none;transition:all .25s;max-width:80vw}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+/* ===== MODALS ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.overlay.hidden{display:none}
+.overlay.center{align-items:center}
+
+/* Login (bottom sheet, compact) */
+.login-sheet{background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 32px;width:100%;max-width:480px}
+.login-sheet .ls-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px}
+.login-sheet .ls-sub{font-size:12px;color:var(--sub);text-align:center;margin-bottom:14px}
+.login-sheet .ls-input{width:100%;border:2px solid #ddd;border-radius:12px;padding:10px 14px;font-size:16px;outline:none;text-align:center;letter-spacing:4px;font-weight:700}
+.login-sheet .ls-input:focus{border-color:var(--pri)}
+.login-sheet .ls-btn{width:100%;background:linear-gradient(135deg,var(--pri),var(--sec));color:#fff;border:none;border-radius:50px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px}
+.login-sheet .ls-err{color:var(--red);font-size:12px;text-align:center;margin-top:6px;min-height:16px}
+.login-sheet .ls-close{width:100%;background:none;border:none;color:var(--sub);font-size:13px;cursor:pointer;margin-top:8px;text-align:center}
+
+/* Redeem modal */
+.redeem-box{background:#fff;border-radius:24px;padding:24px 20px;width:290px;text-align:center}
+.redeem-box .rb-icon{font-size:44px;margin-bottom:8px}
+.redeem-box .rb-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.redeem-box .rb-rule{font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.5}
+.redeem-box .rb-pts{font-size:26px;font-weight:900;color:var(--purple);margin-bottom:16px}
+.redeem-box .rb-row{display:flex;gap:10px}
+.redeem-box .rb-cancel{flex:1;background:#f0f0f0;border:none;border-radius:50px;padding:11px;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer}
+.redeem-box .rb-confirm{flex:1;background:var(--pri);border:none;border-radius:50px;padding:11px;font-size:14px;font-weight:700;color:#fff;cursor:pointer}
+
+/* Edit pts modal */
+.editpts-box{background:#fff;border-radius:20px;padding:20px;width:270px;text-align:center}
+.editpts-box .ep-title{font-size:14px;font-weight:700;margin-bottom:12px}
+.editpts-box .ep-input{width:100%;border:2px solid #ddd;border-radius:10px;padding:8px;font-size:20px;font-weight:700;text-align:center;outline:none}
+.editpts-box .ep-input:focus{border-color:var(--teal)}
+.editpts-box .ep-row{display:flex;gap:8px;margin-top:12px}
+.editpts-box .ep-cancel{flex:1;background:#f0f0f0;border:none;border-radius:50px;padding:9px;font-size:13px;color:var(--sub);cursor:pointer;font-weight:600}
+.editpts-box .ep-save{flex:1;background:var(--teal);border:none;border-radius:50px;padding:9px;font-size:13px;color:#fff;font-weight:700;cursor:pointer}
+
+/* Reset */
+.reset-area{text-align:center;padding:0 14px 8px;display:none}
+.reset-btn{background:none;border:1px solid #ddd;color:#ccc;border-radius:8px;padding:5px 14px;font-size:11px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="top-nav">
+  <div class="nav-logo">
+    <img src="avatar.png" alt="" onerror="this.style.display='none'">
+    <span>鑫澄打卡</span>
+  </div>
+  <div class="nav-tabs" id="topTabs">
+    <div class="nav-tab active" onclick="scrollToSection('sec-overview')">📊 总览</div>
+    <div class="nav-tab" onclick="scrollToSection('sec-safety')">🛡️ 安全</div>
+    <div class="nav-tab" onclick="scrollToSection('sec-health')">💪 健康</div>
+    <div class="nav-tab" onclick="scrollToSection('sec-habit')">⭐ 习惯</div>
+    <div class="nav-tab" onclick="scrollToSection('sec-social')">💛 社交</div>
+    <div class="nav-tab" onclick="scrollToSection('sec-study')">📚 学习</div>
+    <div class="nav-tab" onclick="scrollToSection('sec-shop')">🛒 超市</div>
+  </div>
+  <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔒</button>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="mode-badge" id="modeBadge">👀 访客模式</div>
+  <img class="hero-avatar" src="avatar.png" alt="范鑫澄" onerror="this.style.display='none'">
+  <div class="hero-name">范鑫澄 成长记录打卡</div>
+  <div class="hero-sub">每天进步一点点，积分换好东西 🌟</div>
+</div>
+
+<!-- SCORE BOARD -->
+<div class="score-board">
+  <div class="score-main">
+    <div class="score-big">
+      <div class="num" id="totalScore">0</div>
+      <div class="lbl">余额积分 ⭐</div>
+    </div>
+    <div class="score-mini-grid">
+      <div class="score-mini"><div class="mn" id="todayScore">0</div><div class="ml">今日得分</div></div>
+      <div class="score-mini"><div class="mn" id="weekScore">0</div><div class="ml">本周得分</div></div>
+      <div class="score-mini"><div class="mn" id="monthScore">0</div><div class="ml">本月得分</div></div>
+      <div class="score-mini"><div class="mn" id="checkDays">0</div><div class="ml">打卡天数</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- STREAK 近14天 -->
+<div class="streak-section">
+  <div class="streak-title">📅 近14天打卡</div>
+  <div class="streak-bar" id="streakBar"></div>
+</div>
+
+<!-- WEEK CHART -->
+<div class="chart-card">
+  <div class="chart-title">📊 本周每日得分</div>
+  <div class="week-chart" id="weekChart"></div>
+</div>
+
+<!-- DATE BAR -->
+<div class="date-bar" id="sec-overview">
+  <span class="db-lbl">📅 <span id="dateLbl">今天</span></span>
+  <input type="date" id="datePicker">
+  <button class="db-today" onclick="goToday()">今天</button>
+</div>
+
+<!-- SECTION: 安全 -->
+<div class="section" id="sec-safety">
+  <div class="section-header">
+    <span class="sh-icon">🛡️</span>
+    <span class="sh-title">一、安全 · 平安小卫士</span>
+    <span class="sh-pts" id="pts-safety">0/5</span>
+  </div>
+  <div id="tasks-safety"></div>
+</div>
+
+<!-- SECTION: 健康 -->
+<div class="section" id="sec-health">
+  <div class="section-header">
+    <span class="sh-icon">💪</span>
+    <span class="sh-title">二、健康 · 活力小健将</span>
+    <span class="sh-pts" id="pts-health">0/6</span>
+  </div>
+  <div id="tasks-health"></div>
+</div>
+
+<!-- SECTION: 习惯 -->
+<div class="section" id="sec-habit">
+  <div class="section-header">
+    <span class="sh-icon">⭐</span>
+    <span class="sh-title">三、习惯 · 自理小大人</span>
+    <span class="sh-pts" id="pts-habit">0/20</span>
+  </div>
+  <div id="tasks-habit"></div>
+</div>
+
+<!-- SECTION: 社交 -->
+<div class="section" id="sec-social">
+  <div class="section-header">
+    <span class="sh-icon">💛</span>
+    <span class="sh-title">四、社交 · 阳光小绅士</span>
+    <span class="sh-pts" id="pts-social">0/6</span>
+  </div>
+  <div id="tasks-social"></div>
+</div>
+
+<!-- SECTION: 学习 -->
+<div class="section" id="sec-study">
+  <div class="section-header">
+    <span class="sh-icon">📚</span>
+    <span class="sh-title">五、学习 · 预备小学生</span>
+    <span class="sh-pts" id="pts-study">0/13</span>
+  </div>
+  <div id="tasks-study"></div>
+</div>
+
+<!-- SUBMIT -->
+<div class="section" style="padding-bottom:8px">
+  <div id="submittedBadge" style="display:none" class="submitted-badge">
+    <div class="sb-score" id="submittedScore"></div>
+    <div class="sb-lbl">今日已提交得分</div>
+  </div>
+  <div class="submit-wrap">
+    <button class="submit-btn" id="submitBtn" disabled onclick="submitToday()">🔒 请先解锁</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="section">
+  <div class="section-header"><span class="sh-icon">📊</span><span class="sh-title">历史记录</span></div>
+  <button class="history-btn" onclick="toggleHistory()">展开历史记录 ▾</button>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- SHOP -->
+<div class="section" id="sec-shop">
+  <div class="section-header"><span class="sh-icon">🛒</span><span class="sh-title">积分超市</span></div>
+  <div class="shop-balance" id="shopBalance">余额 <b>0</b> 积分</div>
+  <div id="shopList"></div>
+</div>
+
+<!-- Reset -->
+<div class="reset-area" id="resetArea">
+  <button class="reset-btn" onclick="confirmReset()">清除全部数据（慎用）</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bn-item active" onclick="scrollToSection('sec-overview')"><div class="bn-icon">📊</div>总览</div>
+  <div class="bn-item" onclick="scrollToSection('sec-safety')"><div class="bn-icon">🛡️</div>安全</div>
+  <div class="bn-item" onclick="scrollToSection('sec-habit')"><div class="bn-icon">⭐</div>习惯</div>
+  <div class="bn-item" onclick="scrollToSection('sec-study')"><div class="bn-icon">📚</div>学习</div>
+  <div class="bn-item" onclick="scrollToSection('sec-shop')"><div class="bn-icon">🛒</div>超市</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Login Sheet -->
+<div class="overlay hidden" id="loginOverlay">
+  <div class="login-sheet">
+    <div class="ls-title">🔐 家长解锁</div>
+    <div class="ls-sub">输入管理员密码，解锁打卡与兑换功能</div>
+    <input type="password" class="ls-input" id="pinInput" maxlength="8" placeholder="输入密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="ls-btn" onclick="doLogin()">解锁</button>
+    <div class="ls-err" id="loginErr"></div>
+    <button class="ls-close" onclick="closeLogin()">取消</button>
+  </div>
+</div>
+
+<!-- Redeem Modal -->
+<div class="overlay hidden center" id="redeemOverlay">
+  <div class="redeem-box">
+    <div class="rb-icon" id="rmIcon"></div>
+    <div class="rb-title" id="rmTitle"></div>
+    <div class="rb-rule" id="rmRule"></div>
+    <div class="rb-pts" id="rmPts"></div>
+    <div class="rb-row">
+      <button class="rb-cancel" onclick="closeRedeem()">取消</button>
+      <button class="rb-confirm" onclick="confirmRedeem()">确认兑换</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div class="overlay hidden center" id="editOverlay">
+  <div class="editpts-box">
+    <div class="ep-title" id="epTitle">修改积分</div>
+    <input type="number" class="ep-input" id="epInput" min="1">
+    <div class="ep-row">
+      <button class="ep-cancel" onclick="closeEdit()">取消</button>
+      <button class="ep-save" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =========== AUTH ===========
+const ADMIN_PIN = '20201106';
+const KEY_AUTH = 'fxc_auth_v2';
+function isAdmin(){ return sessionStorage.getItem(KEY_AUTH)==='1'; }
+
+function toggleLock(){
+  if(isAdmin()){ doLogout(); }
+  else{ document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('pinInput').value=''; document.getElementById('loginErr').textContent=''; setTimeout(()=>document.getElementById('pinInput').focus(),200); }
+}
+function closeLogin(){ document.getElementById('loginOverlay').classList.add('hidden'); }
+function doLogin(){
+  const v = document.getElementById('pinInput').value;
+  if(v===ADMIN_PIN){ sessionStorage.setItem(KEY_AUTH,'1'); closeLogin(); updateModeUI(); showToast('🔓 管理模式已开启'); renderAll(); }
+  else{ document.getElementById('loginErr').textContent='密码错误'; document.getElementById('pinInput').value=''; document.getElementById('pinInput').focus(); }
+}
+function doLogout(){ sessionStorage.removeItem(KEY_AUTH); updateModeUI(); showToast('🔒 已退出管理'); renderAll(); }
+
+function updateModeUI(){
+  const a = isAdmin();
+  const badge = document.getElementById('modeBadge');
+  const btn = document.getElementById('lockBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const resetArea = document.getElementById('resetArea');
+  badge.textContent = a ? '🔓 管理模式' : '👀 访客模式';
+  badge.className = 'mode-badge' + (a?' admin':'');
+  btn.textContent = a ? '🔓' : '🔒';
+  btn.className = 'lock-btn' + (a?' open':'');
+  submitBtn.disabled = !a;
+  submitBtn.textContent = a ? '💾 提交今日打卡' : '🔒 请先解锁';
+  resetArea.style.display = a ? 'block' : 'none';
+  // Show/hide edit price buttons
+  document.querySelectorAll('.edit-pts-btn').forEach(b=>{ b.style.display = a?'inline-block':'none'; });
+}
+
+// =========== DATA ===========
+const TASKS = {
+  safety:[
+    {id:'s1', name:'骑车及交通安全', desc:'正确佩戴头盔；认识红绿灯；走斑马线；不在马路上玩耍；坐车系安全带', pts:2},
+    {id:'s2', name:'外出安全', desc:'外出前告知父母；佩戴电话手表；不吃陌生人食物；不跟陌生人走', pts:3},
+  ],
+  health:[
+    {id:'h1', name:'好好吃饭', desc:'吃完妈妈搭配的饭菜，不挑食、不剩饭，20分钟内专心用餐', pts:1},
+    {id:'h2', name:'户外运动', desc:'每日户外跑跳、拍球、骑车，累计运动满30分钟', pts:1},
+    {id:'h3', name:'跳绳练习', desc:'按阶段目标递进：50次→100次→200次', pts:1},
+    {id:'h4', name:'吊单杠练习', desc:'按时长目标递进坚持：10秒→20秒→30秒', pts:1},
+    {id:'h5', name:'洗澡洗漱', desc:'独立洗澡+刷牙洗脸，洗澡≤20分钟、洗漱≤10分钟', pts:1},
+    {id:'h6', name:'独立如厕', desc:'自主如厕，不憋尿憋便，自己擦干净、整理衣裤', pts:1},
+  ],
+  habit:[
+    {id:'b1', name:'吃饭安静', desc:'吃饭时保持安静，不说话', pts:2},
+    {id:'b2', name:'认真倾听', desc:'大人说话时认真倾听，不插嘴，不说不合时宜的话', pts:2},
+    {id:'b3', name:'自己入睡', desc:'睡觉时保持安静，自己独立入睡', pts:2},
+    {id:'b4', name:'不摸头发', desc:'养成每日不摸头发的好习惯', pts:2},
+    {id:'b5', name:'玩具归位', desc:'玩耍结束，玩具全部自行收纳、放回固定原位', pts:2},
+    {id:'b6', name:'自行车归位', desc:'骑行自行车回家后，自觉定点停放、摆放整齐', pts:1},
+    {id:'b7', name:'进门换鞋', desc:'回家主动换居家鞋，外出鞋摆放整齐归位鞋柜', pts:1},
+    {id:'b8', name:'屏幕自律', desc:'晚上8点后不看手机、平板、电视等任何电子产品', pts:1},
+    {id:'b9', name:'书包管理', desc:'放学回家书包定点摆放，不乱丢、不乱放', pts:1},
+    {id:'b10',name:'睡衣自理', desc:'独立穿脱睡衣裤，不依赖大人帮忙', pts:1},
+    {id:'b11',name:'整理床铺', desc:'起床后自主叠被子、整理枕头与床铺', pts:1},
+    {id:'b12',name:'衣物收纳', desc:'换下脏衣服，自觉主动放入洗衣篮归类', pts:1},
+    {id:'b13',name:'穿衣脱衣', desc:'初期引导下独立穿脱；后期无需引导自行正确穿脱', pts:1},
+    {id:'b14',name:'作息守时', desc:'晚上9点准时上床睡觉，不拖拉、不磨蹭', pts:1},
+    {id:'b15',name:'自觉完成作业', desc:'放学主动记起，自觉提出并完成幼儿园当日作业', pts:1},
+  ],
+  social:[
+    {id:'c1', name:'礼貌礼仪', desc:'跟熟悉的人主动问好，习惯说谢谢、做错事主动说对不起', pts:2},
+    {id:'c2', name:'情绪管理', desc:'生气不打人、不大喊大叫、不摔东西，用语言表达情绪', pts:2},
+    {id:'c3', name:'兄妹相处', desc:'主动和妹妹分享食物、玩具，懂得礼让，不霸道争抢', pts:2},
+  ],
+  study:[
+    {id:'e1', name:'数学练习', desc:'数学做题细心，全部正确', pts:3},
+    {id:'e2', name:'英语启蒙', desc:'牛津树分级阅读跟读，认真完成每日视频打卡', pts:2},
+    {id:'e3', name:'汉字练习', desc:'汉字书写工整认真，专注练习', pts:2},
+    {id:'e4', name:'汉字默写', desc:'汉字默写全部正确', pts:2},
+    {id:'e5', name:'拼音启蒙', desc:'零基础循序渐进跟读、认读，每日坚持认真学习', pts:2},
+    {id:'e6', name:'阅读打卡', desc:'绘本/分级读物精读完成，按要求做视频打卡记录', pts:2},
+  ]
+};
+const MAX_SCORE = 50;
+const SECTION_MAX = {safety:5, health:6, habit:20, social:6, study:13};
+
+// Shop data (pts modifiable by admin)
+const KEY_SHOP_PTS = 'fxc_shop_pts_v2';
+const SHOP_DEFAULT = [
+  {id:'sh1',cat:'📱 屏幕时间',emoji:'📱',name:'手机 10分钟（初次）',rule:'周五晚—周日可用，专心使用到点即停',pts:10},
+  {id:'sh2',cat:'📱 屏幕时间',emoji:'📱',name:'手机 15分钟（延时）',rule:'已用10分钟后申请，需家长确认',pts:15},
+  {id:'sh3',cat:'📱 屏幕时间',emoji:'📱',name:'平板 10分钟（初次）',rule:'周五晚—周日可用，到点即停',pts:10},
+  {id:'sh4',cat:'📱 屏幕时间',emoji:'📱',name:'平板 15分钟（延时）',rule:'需间隔休息，需家长确认',pts:15},
+  {id:'sh5',cat:'📱 屏幕时间',emoji:'📺',name:'电视 15分钟（初次）',rule:'周五晚—周日可用，按节目申请',pts:15},
+  {id:'sh6',cat:'📱 屏幕时间',emoji:'📺',name:'电视 20分钟（延时）',rule:'不连续观看，需间隔休息，需家长确认',pts:20},
+  {id:'sh7',cat:'🧸 玩具兑换',emoji:'🧸',name:'小玩具（50元以内）',rule:'自主挑选，每周攒够积分即可换',pts:70},
+  {id:'sh8',cat:'🧸 玩具兑换',emoji:'🎮',name:'中玩具（100元以内）',rule:'自主挑选，需运动周达人勋章配合',pts:200},
+  {id:'sh9',cat:'🧸 玩具兑换',emoji:'🚗',name:'大玩具（200元以内）',rule:'自主挑选，需运动月达人勋章配合',pts:500},
+  {id:'sh10',cat:'🎡 体验活动',emoji:'🏎️',name:'开卡丁车体验',rule:'独立驾驶体验，可邀请爸妈陪同',pts:50},
+  {id:'sh11',cat:'🎡 体验活动',emoji:'🚗',name:'体验爸爸奥迪车',rule:'坐驾驶位近距离体验，爸爸陪同',pts:29},
+  {id:'sh12',cat:'🎡 体验活动',emoji:'🌿',name:'短途出游：公园/爬山',rule:'家长陪同，提前选好地点',pts:60},
+  {id:'sh13',cat:'🎡 体验活动',emoji:'🦒',name:'短途出游：博物馆/动物园',rule:'家长负责安排行程，提前预约',pts:60},
+  {id:'sh14',cat:'🎡 体验活动',emoji:'🎬',name:'短途出游：沙滩/电影/爬山',rule:'家长陪同参与',pts:59},
+  {id:'sh15',cat:'🎡 体验活动',emoji:'✈️',name:'长途旅游/主题公园',rule:'家长全程安排，配合月勋章',pts:100},
+  {id:'sh16',cat:'🍬 零食超市',emoji:'🛒',name:'逛盒马超市自主选购',rule:'家长陪同，自由挑小零食',pts:50},
+  {id:'sh17',cat:'🍬 零食超市',emoji:'🍔',name:'麦当劳/肯德基汉堡',rule:'家长陪同，限1次/周',pts:60},
+];
+
+function loadShopPts(){
+  try{ return JSON.parse(localStorage.getItem(KEY_SHOP_PTS)||'{}'); }catch(e){ return {}; }
+}
+function saveShopPts(o){ localStorage.setItem(KEY_SHOP_PTS, JSON.stringify(o)); }
+function getShopItems(){
+  const custom = loadShopPts();
+  return SHOP_DEFAULT.map(item=>({...item, pts: custom[item.id]??item.pts}));
+}
+
+// Records
+const KEY_RECORDS = 'fxc_records_v3';
+const KEY_REDEEMS = 'fxc_redeems_v2';
+function loadRecords(){ try{ return JSON.parse(localStorage.getItem(KEY_RECORDS)||'{}'); }catch(e){ return {}; } }
+function saveRecords(r){ localStorage.setItem(KEY_RECORDS, JSON.stringify(r)); }
+function loadRedeems(){ try{ return JSON.parse(localStorage.getItem(KEY_REDEEMS)||'[]'); }catch(e){ return []; } }
+function saveRedeems(r){ localStorage.setItem(KEY_REDEEMS, JSON.stringify(r)); }
+
+function dateStr(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+function todayStr(){ return dateStr(new Date()); }
+function weekStart(ds){
+  const dt=new Date(ds); const day=dt.getDay()||7; dt.setDate(dt.getDate()-day+1); return dateStr(dt);
+}
+function getBalance(){
+  const records=loadRecords(); const redeems=loadRedeems();
+  const earned=Object.values(records).reduce((s,r)=>s+r.score,0);
+  const spent=redeems.reduce((s,r)=>s+r.pts,0);
+  return Math.max(0, earned-spent);
+}
+
+// =========== STATE ===========
+let currentDate = todayStr();
+let checked = {};
+
+// =========== RENDER ===========
+function renderAll(){
+  renderScoreBoard();
+  renderStreak();
+  renderWeekChart();
+  renderCheckSections();
+  renderHistory();
+  renderShop();
+  updateModeUI();
+}
+
+function renderScoreBoard(){
+  const records=loadRecords();
+  const bal=getBalance();
+  const today=new Date();
+  const ws=weekStart(dateStr(today));
+  const ms=dateStr(today).slice(0,7);
+  let week=0,month=0,days=0;
+  for(const [k,v] of Object.entries(records)){
+    if(v.score>0) days++;
+    if(k>=ws) week+=v.score;
+    if(k.startsWith(ms)) month+=v.score;
+  }
+  const todayRec=records[todayStr()];
+  document.getElementById('totalScore').textContent=bal;
+  document.getElementById('todayScore').textContent=todayRec?todayRec.score:0;
+  document.getElementById('weekScore').textContent=week;
+  document.getElementById('monthScore').textContent=month;
+  document.getElementById('checkDays').textContent=days;
+}
+
+function renderStreak(){
+  const records=loadRecords();
+  const bar=document.getElementById('streakBar');
+  bar.innerHTML='';
+  const today=new Date();
+  for(let i=13;i>=0;i--){
+    const d2=new Date(today); d2.setDate(today.getDate()-i);
+    const ds=dateStr(d2);
+    const rec=records[ds];
+    const isToday=ds===dateStr(today);
+    const isSelected=ds===currentDate;
+    const passed=rec&&rec.score>0;
+    const div=document.createElement('div');
+    div.className='streak-day'+(isToday?' today-dot':'')+(passed&&!isToday?' pass':'')+(isSelected&&!isToday?' selected':'');
+    div.innerHTML=`<div class="sd-num">${String(d2.getDate()).padStart(2,'0')}</div><div class="sd-dot">${passed?(isToday?'今':'✓'):isToday?'今':''}</div>`;
+    div.onclick=()=>{ currentDate=ds; checked={}; const r=records[ds]; if(r) checked={...(r.done||{})}; renderCheckSections(); renderStreak(); document.getElementById('dateLbl').textContent=isToday?'今天':ds.slice(5); document.getElementById('datePicker').value=ds; };
+    bar.appendChild(div);
+  }
+}
+
+function renderWeekChart(){
+  const records=loadRecords();
+  const today=new Date();
+  const ws=weekStart(dateStr(today));
+  const days=['周一','周二','周三','周四','周五','周六','周日'];
+  const container=document.getElementById('weekChart');
+  container.innerHTML='';
+  for(let i=0;i<7;i++){
+    const dt=new Date(ws); dt.setDate(dt.getDate()+i);
+    const ds=dateStr(dt);
+    const isToday=ds===dateStr(today);
+    const rec=records[ds];
+    const score=rec?rec.score:0;
+    const pct=Math.round(score/MAX_SCORE*100);
+    const wrap=document.createElement('div');
+    wrap.className='wc-bar-wrap';
+    wrap.innerHTML=`
+      <div class="wc-score">${score||''}</div>
+      <div class="wc-bar-bg"><div class="wc-bar-fill ${isToday?'today':''}" style="height:${pct}%"></div></div>
+      <div class="wc-label">${days[i]}</div>`;
+    container.appendChild(wrap);
+  }
+}
+
+function renderCheckSections(){
+  const records=loadRecords();
+  const rec=records[currentDate];
+  const submitted=!!rec;
+  const admin=isAdmin();
+
+  const sections={
+    safety:{key:'safety',tasks:TASKS.safety},
+    health:{key:'health',tasks:TASKS.health},
+    habit:{key:'habit',tasks:TASKS.habit},
+    social:{key:'social',tasks:TASKS.social},
+    study:{key:'study',tasks:TASKS.study},
+  };
+
+  for(const [secKey,sec] of Object.entries(sections)){
+    const container=document.getElementById('tasks-'+secKey);
+    container.innerHTML='';
+    let secScore=0;
+    for(const task of sec.tasks){
+      const isDone=submitted?!!(rec.done||{})[task.id]:!!(checked[task.id]);
+      if(isDone) secScore+=task.pts;
+      const div=document.createElement('div');
+      div.className='task-item'+(isDone?' done':'')+(admin&&!submitted?' clickable':'');
+      div.innerHTML=`<div class="ti-check">${isDone?'✓':''}</div><div class="ti-body"><div class="ti-name">${task.name}</div><div class="ti-desc">${task.desc}</div></div><div class="ti-pts">${task.pts}分</div>`;
+      if(admin&&!submitted) div.onclick=()=>{ checked[task.id]=!checked[task.id]; renderCheckSections(); };
+      container.appendChild(div);
+    }
+    document.getElementById('pts-'+secKey).textContent=`${secScore}/${SECTION_MAX[secKey]}`;
+  }
+
+  // Submit area
+  const badge=document.getElementById('submittedBadge');
+  const btn=document.getElementById('submitBtn');
+  if(submitted){
+    badge.style.display='block';
+    document.getElementById('submittedScore').textContent=rec.score+'/'+MAX_SCORE+' 分';
+    if(admin){ btn.textContent='✏️ 修改今日打卡'; btn.disabled=false; btn.onclick=editToday; }
+    else{ btn.textContent='🔒 请先解锁'; btn.disabled=true; }
+  } else {
+    badge.style.display='none';
+    if(admin){ btn.textContent='💾 提交今日打卡'; btn.disabled=false; btn.onclick=submitToday; }
+    else{ btn.textContent='🔒 请先解锁'; btn.disabled=true; }
+  }
+}
+
+function renderHistory(){
+  const records=loadRecords();
+  const redeems=loadRedeems();
+  const sorted=Object.entries(records).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,40);
+  const container=document.getElementById('historyList');
+  if(!sorted.length){ container.innerHTML='<div style="text-align:center;color:#ccc;font-size:12px;padding:12px">暂无记录</div>'; return; }
+  container.innerHTML=sorted.map(([k,v])=>{
+    const pct=Math.round(v.score/MAX_SCORE*100);
+    const stars='🌟'.repeat(Math.floor(pct/25));
+    const dayRedeems=redeems.filter(r=>r.date===k);
+    const spent=dayRedeems.reduce((s,r)=>s+r.pts,0);
+    return `<div class="history-row"><span class="hr-date">${k}</span><span>${stars||'—'}</span><span class="hr-score">${v.score}分${spent?` <span style="color:var(--sub)">兑-${spent}</span>`:''}`;
+  }).join('')+'</div>';
+}
+
+function renderShop(){
+  const items=getShopItems();
+  const bal=getBalance();
+  const admin=isAdmin();
+  document.getElementById('shopBalance').innerHTML=`余额 <b>${bal}</b> 积分`;
+  const container=document.getElementById('shopList');
+  container.innerHTML='';
+  let lastCat='';
+  items.forEach((item,idx)=>{
+    if(item.cat!==lastCat){
+      const ct=document.createElement('div');
+      ct.className='shop-cat-title';
+      ct.textContent=item.cat;
+      container.appendChild(ct);
+      lastCat=item.cat;
+    }
+    const canBuy=bal>=item.pts;
+    const div=document.createElement('div');
+    div.className='shop-item'+(canBuy?'':' locked');
+    div.innerHTML=`
+      <div class="si-emoji">${item.emoji}</div>
+      <div class="si-body"><div class="si-name">${item.name}</div><div class="si-rule">${item.rule}</div></div>
+      <div class="si-right">
+        <div><span class="si-pts">${item.pts}</span><span class="si-pts-lbl">积分</span></div>
+        ${admin?`<button class="edit-pts-btn" style="display:${admin?'inline-block':'none'}" onclick="event.stopPropagation();openEdit(${idx})">改价</button>`:''}
+        <button class="redeem-btn ${canBuy&&admin?'':'locked'}" ${(canBuy&&admin)?'':'disabled'} onclick="event.stopPropagation();openRedeem(${idx})">兑换</button>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// =========== ACTIONS ===========
+function goToday(){
+  currentDate=todayStr();
+  checked={};
+  const rec=loadRecords()[currentDate];
+  if(rec) checked={...(rec.done||{})};
+  document.getElementById('datePicker').value=currentDate;
+  document.getElementById('dateLbl').textContent='今天';
+  renderCheckSections();
+  renderStreak();
+}
+
+document.getElementById('datePicker').addEventListener('change',function(){
+  currentDate=this.value;
+  checked={};
+  const rec=loadRecords()[currentDate];
+  if(rec) checked={...(rec.done||{})};
+  document.getElementById('dateLbl').textContent=currentDate===todayStr()?'今天':currentDate.slice(5);
+  renderCheckSections();
+  renderStreak();
+});
+
+function submitToday(){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  const score=Object.values(TASKS).flat().reduce((s,t)=>s+(checked[t.id]?t.pts:0),0);
+  const records=loadRecords();
+  records[currentDate]={score,done:{...checked}};
+  saveRecords(records);
+  showToast(score>=MAX_SCORE?'🎉 今日满分！超棒！':`✅ 提交成功！今天得 ${score} 分`);
+  renderAll();
+}
+
+function editToday(){
+  if(!isAdmin()) return;
+  const records=loadRecords();
+  const rec=records[currentDate];
+  if(rec) checked={...(rec.done||{})};
+  delete records[currentDate];
+  saveRecords(records);
+  renderCheckSections();
+}
+
+function toggleHistory(){
+  document.getElementById('historyList').classList.toggle('open');
+}
+
+// =========== REDEEM ===========
+let pendingIdx=-1;
+function openRedeem(idx){
+  if(!isAdmin()){ showToast('🔒 请先解锁再兑换'); return; }
+  const item=getShopItems()[idx];
+  const bal=getBalance();
+  if(bal<item.pts){ showToast('积分不足，无法兑换'); return; }
+  pendingIdx=idx;
+  document.getElementById('rmIcon').textContent=item.emoji;
+  document.getElementById('rmTitle').textContent=item.name;
+  document.getElementById('rmRule').textContent=item.rule;
+  document.getElementById('rmPts').textContent=item.pts+' 积分';
+  document.getElementById('redeemOverlay').classList.remove('hidden');
+}
+function closeRedeem(){ document.getElementById('redeemOverlay').classList.add('hidden'); pendingIdx=-1; }
+function confirmRedeem(){
+  if(pendingIdx<0) return;
+  const item=getShopItems()[pendingIdx];
+  const bal=getBalance();
+  if(bal<item.pts){ showToast('积分不足'); closeRedeem(); return; }
+  const redeems=loadRedeems();
+  redeems.push({date:todayStr(),name:item.name,pts:item.pts,id:item.id});
+  saveRedeems(redeems);
+  closeRedeem();
+  showToast(`✅ 已兑换「${item.name}」`);
+  renderAll();
+}
+
+// =========== EDIT PRICE ===========
+let editingIdx=-1;
+function openEdit(idx){
+  if(!isAdmin()){ return; }
+  editingIdx=idx;
+  const item=getShopItems()[idx];
+  document.getElementById('epTitle').textContent='修改「'+item.name+'」积分';
+  document.getElementById('epInput').value=item.pts;
+  document.getElementById('editOverlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('epInput').focus(),200);
+}
+function closeEdit(){ document.getElementById('editOverlay').classList.add('hidden'); editingIdx=-1; }
+function saveEdit(){
+  if(editingIdx<0) return;
+  const val=parseInt(document.getElementById('epInput').value);
+  if(!val||val<1){ showToast('请输入有效积分'); return; }
+  const item=SHOP_DEFAULT[editingIdx];
+  const custom=loadShopPts();
+  custom[item.id]=val;
+  saveShopPts(custom);
+  closeEdit();
+  showToast('✅ 价格已更新');
+  renderShop();
+}
+
+// =========== MISC ===========
+function scrollToSection(id){
+  const el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function confirmReset(){
+  if(!isAdmin()) return;
+  if(confirm('确定清除全部打卡数据和兑换记录吗？不可恢复！')){
+    localStorage.removeItem(KEY_RECORDS);
+    localStorage.removeItem(KEY_REDEEMS);
+    checked={};
+    renderAll();
+    showToast('已清除全部数据');
+  }
+}
+
+// =========== INIT ===========
+document.getElementById('datePicker').value=currentDate;
+updateModeUI();
+renderAll();
+</script>
+</body>
+</html>
