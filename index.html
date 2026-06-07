@@ -196,7 +196,7 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 /* ===== 周总结弹窗 ===== */
 .weekly-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
 .weekly-overlay.hidden{display:none}
-.weekly-box{background:#fff;border-radius:24px;padding:20px 18px 24px;width:100%;max-width:360px;text-align:center}
+.weekly-box{background:#fff;border-radius:24px;padding:20px 18px 24px;width:100%;max-width:360px;text-align:center;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .weekly-box .wb-title{font-size:18px;font-weight:800;margin-bottom:2px;color:var(--pri)}
 .weekly-box .wb-sub{font-size:12px;color:var(--sub);margin-bottom:14px}
 .weekly-box .wb-score{font-size:50px;font-weight:900;color:var(--pri);line-height:1}
@@ -226,7 +226,27 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 .weekly-box .wb-praise-item .wpi-name{font-size:13px;font-weight:700;color:var(--text)}
 .weekly-box .wb-praise-item .wpi-rate{font-size:11px;color:var(--sub);margin-top:1px}
 .weekly-box .wb-msg{font-size:14px;color:var(--text);margin-bottom:16px;line-height:1.6;font-weight:600}
+/* 本周兑换 */
+.weekly-box .wb-redeem-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;text-align:left}
+.weekly-box .wb-redeem-summary{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.weekly-box .wb-redeem-tag{background:#F3E5F5;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--purple);white-space:nowrap}
+.weekly-box .wb-redeem-tag .wrt-count{font-size:16px}
+.weekly-box .wb-redeem-list{text-align:left;margin-bottom:14px}
+.weekly-box .wb-redeem-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px dashed #eee}
+.weekly-box .wb-redeem-row .wrr-name{color:var(--text);flex:1}
+.weekly-box .wb-redeem-row .wrr-pts{color:var(--purple);font-weight:700;margin-left:8px}
 .weekly-box .wb-close{width:100%;background:linear-gradient(135deg,var(--pri),var(--sec));color:#fff;border:none;border-radius:50px;padding:13px;font-size:15px;font-weight:700;cursor:pointer}
+
+/* 积分超市兑换总览 */
+.redeem-overview{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);display:none}
+.redeem-overview.has-data{display:block}
+.redeem-overview .ro-title{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.redeem-overview .ro-grid{display:flex;flex-wrap:wrap;gap:6px}
+.redeem-overview .ro-tag{display:flex;align-items:center;gap:3px;background:#F3E5F5;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--purple)}
+.redeem-overview .ro-tag .ro-cat{color:var(--sub)}
+.redeem-overview .ro-tag .ro-num{font-size:15px}
+.redeem-overview .ro-total{font-size:12px;color:var(--sub);margin-top:8px;text-align:right}
+.redeem-overview .ro-total b{color:var(--purple);font-size:15px}
 
 /* Reset */
 .reset-area{text-align:center;padding:0 14px 8px;display:none}
@@ -347,6 +367,16 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div id="tasks-study"></div>
 </div>
 
+<!-- SECTION: 其他加分（独立小项，提交前展示） -->
+<div class="section" id="sec-bonus">
+  <div class="section-header">
+    <span class="sh-icon">⭐</span>
+    <span class="sh-title">六、其他加分 · 家长评定</span>
+    <span class="sh-pts" id="pts-bonus">0/5</span>
+  </div>
+  <div id="tasks-bonus"></div>
+</div>
+
 <!-- SUBMIT -->
 <div class="section" style="padding-bottom:8px">
   <div id="submittedBadge" style="display:none" class="submitted-badge">
@@ -369,7 +399,9 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 <div class="section" id="sec-shop">
   <div class="section-header"><span class="sh-icon">🛒</span><span class="sh-title">积分超市</span></div>
   <div class="shop-balance" id="shopBalance">余额 <b>0</b> 积分</div>
+  <div class="redeem-overview" id="shopRedeemTop"></div>
   <div id="shopList"></div>
+  <div class="redeem-overview" id="shopRedeemBottom"></div>
 </div>
 
 <!-- Reset -->
@@ -450,6 +482,10 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
     <div class="wb-praise-title">🏅 本周表现优秀的项目</div>
     <div class="wb-praise-list" id="wb-praise"></div>
     <div class="wb-msg" id="wb-msg"></div>
+    <!-- 本周兑换 -->
+    <div class="wb-redeem-title">🛒 本周兑换记录</div>
+    <div class="wb-redeem-summary" id="wb-redeem-tags"></div>
+    <div class="wb-redeem-list" id="wb-redeem-list"></div>
     <button class="wb-close" onclick="closeWeekly()">知道了，继续加油！💪</button>
   </div>
 </div>
@@ -665,8 +701,14 @@ function renderStreak(){
     div.onclick=()=>{
       currentDate=ds; checked={}; bonusDesc='';
       const r=records[ds];
-      if(r){ Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=getDoneVal(r.done,t); }); bonusDesc=r.bonusDesc||''; }
-      else { Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=t.pts; }); bonusDesc=''; } // 默认最高分
+      if(r){
+        Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=getDoneVal(r.done,t); });
+        checked['c5']=r.done&&r.done['c5']!==undefined?Number(r.done['c5']):0;
+        bonusDesc=r.bonusDesc||'';
+      } else {
+        Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=t.isBonus?0:t.pts; });
+        checked['c5']=0; bonusDesc='';
+      }
       renderCheckSections(); renderStreak();
       document.getElementById('dateLbl').textContent=isToday?'今天':ds.slice(5);
       document.getElementById('datePicker').value=ds;
@@ -782,6 +824,41 @@ function renderCheckSections(){
     document.getElementById('pts-'+secKey).textContent=`${secScore}/${SECTION_MAX[secKey]}`;
   }
 
+  // 渲染「其他加分」独立区块（sec-bonus）
+  const bonusContainer=document.getElementById('tasks-bonus');
+  if(bonusContainer){
+    bonusContainer.innerHTML='';
+    const task=BONUS_TASK;
+    const val = submitted ? getDoneVal(rec.done,task) : (Number(checked[task.id])||0);
+    const isDone = val>0;
+    const descVal = submitted ? (rec.bonusDesc||'') : bonusDesc;
+    const div=document.createElement('div');
+    div.className='task-item'+(isDone?' done':'');
+    if(admin && !submitted){
+      div.innerHTML=`
+        <div class="ti-check" onclick="toggleBonusCheck()">${val>0?'✓':''}</div>
+        <div class="ti-body">
+          <div class="ti-name">${task.name}</div>
+          <div class="ti-desc">${task.desc}</div>
+          <div class="bonus-input-wrap" onclick="event.stopPropagation()">
+            <input type="number" min="0" max="${task.pts}" value="${val}" placeholder="分值" oninput="updateBonus(this.value)" style="width:55px;border:2px solid #ddd;border-radius:8px;padding:4px;font-size:16px;font-weight:700;text-align:center;outline:none;color:var(--pri)">
+            <input type="text" value="${descVal}" placeholder="填写加分原因…" oninput="bonusDesc=this.value" style="flex:1;border:1.5px solid #ddd;border-radius:8px;padding:5px 10px;font-size:13px;outline:none">
+          </div>
+        </div>
+        <div class="ti-right"><span class="ti-pts">${val||0}/${task.pts}分</span></div>`;
+    } else {
+      div.innerHTML=`
+        <div class="ti-check">${val>0?'✓':''}</div>
+        <div class="ti-body">
+          <div class="ti-name">${task.name}${val>0?' <span style="color:var(--green)">+'+val+'</span>':''}</div>
+          <div class="ti-desc">${descVal||task.desc}</div>
+        </div>
+        <div class="ti-right"><span class="ti-pts">${val||0}/${task.pts}分</span></div>`;
+    }
+    bonusContainer.appendChild(div);
+    document.getElementById('pts-bonus').textContent=`${val}/${task.pts}`;
+  }
+
   // Submit area
   const badge=document.getElementById('submittedBadge');
   const btn=document.getElementById('submitBtn');
@@ -870,6 +947,22 @@ function renderShop(){
       </div>`;
     container.appendChild(div);
   });
+  // 兑换总览（顶部 + 底部）
+  const allRedeems=loadRedeems();
+  const topEl=document.getElementById('shopRedeemTop');
+  const botEl=document.getElementById('shopRedeemBottom');
+  if(allRedeems.length>0){
+    const html=renderRedeemOverviewHtml(allRedeems);
+    topEl.className='redeem-overview has-data';
+    topEl.innerHTML='<div class="ro-title">🛒 累计兑换总览</div>'+html;
+    botEl.className='redeem-overview has-data';
+    botEl.innerHTML=html;
+  } else {
+    topEl.className='redeem-overview';
+    topEl.innerHTML='';
+    botEl.className='redeem-overview';
+    botEl.innerHTML='';
+  }
 }
 
 // =========== ACTIONS ===========
@@ -879,11 +972,11 @@ function goToday(){
   const rec=loadRecords()[currentDate];
   if(rec){
     Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=getDoneVal(rec.done,t); });
+    checked['c5']=rec.done&&rec.done['c5']!==undefined?Number(rec.done['c5']):0;
     bonusDesc=rec.bonusDesc||'';
   } else {
-    // 默认所有项目给满分（除other bonus外）
     Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=t.isBonus?0:t.pts; });
-    bonusDesc='';
+    checked['c5']=0; bonusDesc='';
   }
   document.getElementById('datePicker').value=currentDate;
   document.getElementById('dateLbl').textContent='今天';
@@ -897,9 +990,11 @@ document.getElementById('datePicker').addEventListener('change',function(){
   const rec=loadRecords()[currentDate];
   if(rec){
     Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=getDoneVal(rec.done,t); });
+    checked['c5']=rec.done&&rec.done['c5']!==undefined?Number(rec.done['c5']):0;
     bonusDesc=rec.bonusDesc||'';
   } else {
     Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=t.isBonus?0:t.pts; });
+    checked['c5']=0;
   }
   document.getElementById('dateLbl').textContent=currentDate===todayStr()?'今天':currentDate.slice(5);
   renderCheckSections();
@@ -908,9 +1003,10 @@ document.getElementById('datePicker').addEventListener('change',function(){
 
 function submitToday(){
   if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
-  const score=Object.values(TASKS).flat().reduce((s,t)=>s+(Number(checked[t.id])||0),0);
+  const score=Object.values(TASKS).flat().reduce((s,t)=>s+(Number(checked[t.id])||0),0) + (Number(checked['c5'])||0);
   const doneSnap={};
   Object.values(TASKS).flat().forEach(t=>{ doneSnap[t.id]=Number(checked[t.id])||0; });
+  doneSnap['c5']=Number(checked['c5'])||0;
   const records=loadRecords();
   records[currentDate]={score, done:doneSnap, bonusDesc};
   saveRecords(records);
@@ -989,6 +1085,65 @@ function saveEdit(){
   closeEdit();
   showToast('✅ 价格已更新');
   renderShop();
+}
+
+// =========== 兑换总览（共用） ===========
+// 构建 id→商品信息 映射
+function buildShopMap(){
+  const map={};
+  getShopItems().forEach(item=>{ map[item.id]=item; });
+  return map;
+}
+// 生成兑换总览HTML（按类别汇总）
+function renderRedeemOverviewHtml(redeems){
+  if(!redeems||!redeems.length) return '<div style="font-size:12px;color:#aaa;padding:6px 0">暂无兑换记录</div>';
+  const shopMap=buildShopMap();
+  const byCat={};
+  let totalPts=0;
+  redeems.forEach(r=>{
+    totalPts+=r.pts;
+    const cat=shopMap[r.id]?shopMap[r.id].cat:'(其他)';
+    if(!byCat[cat]) byCat[cat]={count:0,totalPts:0};
+    byCat[cat].count++;
+    byCat[cat].totalPts+=r.pts;
+  });
+  let tags='';
+  Object.entries(byCat).forEach(([cat,o])=>{
+    tags+=`<span class="ro-tag"><span class="ro-cat">${cat}</span> <span class="ro-num">${o.count}</span>件/${o.totalPts}分</span>`;
+  });
+  return `<div class="ro-grid">${tags}</div><div class="ro-total">合计 <b>${redeems.length}</b> 件，消耗 <b>${totalPts}</b> 积分</div>`;
+}
+// 本周兑换汇总（用于周总结弹窗）
+function renderWeeklyRedeem(){
+  const records=loadRecords();
+  const today=new Date();
+  const ws=weekStart(dateStr(today));
+  const we=new Date(ws+'T00:00:00'); we.setDate(we.getDate()+6);
+  const wsEnd=dateStr(we);
+  const redeems=loadRedeems().filter(r=>r.date>=ws && r.date<=wsEnd);
+  const tagsEl=document.getElementById('wb-redeem-tags');
+  const listEl=document.getElementById('wb-redeem-list');
+  if(!redeems.length){
+    tagsEl.innerHTML='<div style="font-size:12px;color:#aaa">本周暂无兑换</div>';
+    listEl.innerHTML='';
+    return;
+  }
+  const shopMap=buildShopMap();
+  // 标签汇总
+  const byCat={};
+  redeems.forEach(r=>{
+    const cat=shopMap[r.id]?shopMap[r.id].cat:'(其他)';
+    if(!byCat[cat]) byCat[cat]={count:0,totalPts:0};
+    byCat[cat].count++;
+    byCat[cat].totalPts+=r.pts;
+  });
+  tagsEl.innerHTML=Object.entries(byCat).map(([cat,o])=>
+    `<span class="wb-redeem-tag"><span class="wrt-count">${o.count}</span>${cat}</span>`
+  ).join('');
+  // 明细列表
+  listEl.innerHTML=redeems.map(r=>
+    `<div class="wb-redeem-row"><span class="wrr-name">${r.name}</span><span class="wrr-pts">−${r.pts}分</span></div>`
+  ).join('');
 }
 
 // =========== 周总结弹窗 ===========
@@ -1093,6 +1248,8 @@ function showWeeklySummary(){
   Object.values(TASKS).flat().forEach(t=>{
     taskScores[t.id]={total:0,count:0,name:t.name,pts:t.pts,isBonus:!!t.isBonus};
   });
+  // 「其他加分」(c5) 也纳入社交板块统计 + 表扬跟踪
+  taskScores['c5']={total:0,count:0,name:BONUS_TASK.name,pts:BONUS_TASK.pts,isBonus:true};
 
   for(let i=0;i<7;i++){
     const dt=new Date(ws+'T00:00:00'); dt.setDate(dt.getDate()+i);
@@ -1112,6 +1269,11 @@ function showWeeklySummary(){
           taskScores[t.id].count++;
         }
       }
+      // 「其他加分」(c5) 归入社交板块统计
+      const c5v = rec.done['c5']!==undefined ? Number(rec.done['c5']) : 0;
+      secScores.social += c5v;
+      taskScores['c5'].total += c5v;
+      taskScores['c5'].count++;
     }
   }
 
@@ -1179,6 +1341,7 @@ function showWeeklySummary(){
   else if(rate>=40) msg='💪 还有进步空间，相信鑫澄下周会做得更好！';
   else msg='😊 新的一周又开始啦，一起努力打卡吧！';
   document.getElementById('wb-msg').textContent=msg;
+  renderWeeklyRedeem();
   document.getElementById('weeklyOverlay').classList.remove('hidden');
 }
 
