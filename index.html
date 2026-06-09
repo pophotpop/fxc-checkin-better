@@ -248,6 +248,23 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 .redeem-overview .ro-total{font-size:12px;color:var(--sub);margin-top:8px;text-align:right}
 .redeem-overview .ro-total b{color:var(--purple);font-size:15px}
 
+/* 非今天提示 */
+.date-warning{display:none;text-align:center;margin:0 14px 8px;padding:8px 12px;background:#FFF3E0;border-radius:10px;border:2px solid var(--sec);font-size:12px;font-weight:600;color:var(--pri);animation:pulse-warn 2s infinite}
+.date-warning.show{display:block}
+@keyframes pulse-warn{0%,100%{opacity:1}50%{opacity:.7}}
+/* 数据管理 */
+.data-mgmt{padding:0 14px 12px;display:none}
+.data-info{text-align:center;font-size:11px;color:var(--sub);margin-bottom:8px}
+.data-info b{color:var(--pri)}
+.data-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.data-btn{background:var(--card);border:2px solid var(--blue);color:var(--blue);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px}
+.data-btn.danger{border-color:var(--red);color:var(--red)}
+.data-btn.backup{border-color:var(--green);color:var(--green)}
+#importFile{display:none}
+/* 提示引导 */
+.recovery-guide{text-align:center;margin:0 14px 12px;padding:10px;background:#E3F2FD;border-radius:10px;font-size:11px;color:var(--blue);line-height:1.6;display:none}
+.recovery-guide.show{display:block}
+.recovery-guide code{background:#BBDEFB;border-radius:4px;padding:1px 6px;font-size:11px;display:inline-block;margin:2px 0}
 /* Reset */
 .reset-area{text-align:center;padding:0 14px 8px;display:none}
 .reset-btn{background:none;border:1px solid #ddd;color:#ccc;border-radius:8px;padding:5px 14px;font-size:11px;cursor:pointer}
@@ -281,6 +298,9 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="hero-name">范鑫澄 成长记录打卡</div>
   <div class="hero-sub">每天进步一点点，积分换好东西 🌟</div>
 </div>
+
+<!-- 非今天查看提示 -->
+<div class="date-warning" id="dateWarning">⚠️ 你正在查看 <span id="warnDate"></span> 的历史记录，修改不会影响今天的打卡</div>
 
 <!-- SCORE BOARD -->
 <div class="score-board">
@@ -404,10 +424,28 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="redeem-overview" id="shopRedeemBottom"></div>
 </div>
 
-<!-- Reset -->
-<div class="reset-area" id="resetArea">
-  <button class="reset-btn" onclick="confirmReset()">清除全部数据（慎用）</button>
+<!-- Recovery Guide -->
+<div class="recovery-guide" id="recoveryGuide">
+  <div style="font-weight:700;margin-bottom:4px">🔍 数据恢复指引</div>
+  <div style="margin-bottom:4px">如果历史记录突然消失，先检查数据是否还在：</div>
+  手机浏览器地址栏输入：<br>
+  <code>javascript:void(prompt('历史记录',JSON.stringify(JSON.parse(localStorage.fxc_records_v3||'{}'),null,2)))</code><br>
+  <span style="color:var(--sub)">拷贝整行→粘贴到地址栏→回车→看弹窗。若有数据则文件还在，可导出备份再恢复。</span>
 </div>
+
+<!-- Data Mgmt -->
+<div class="data-mgmt" id="dataMgmt">
+  <div class="data-info" id="dataInfo">📦 历史记录：<b>0</b> 天 ｜ 备份状态：<span id="backupStatus">--</span></div>
+  <div class="data-btns">
+    <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
+    <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
+    <button class="data-btn danger" onclick="confirmReset()">🗑 清除全部数据</button>
+  </div>
+  <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
+</div>
+
+<!-- Reset -->
+<div class="reset-area" id="resetArea"></div>
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
@@ -513,15 +551,20 @@ function updateModeUI(){
   const badge = document.getElementById('modeBadge');
   const btn = document.getElementById('lockBtn');
   const submitBtn = document.getElementById('submitBtn');
-  const resetArea = document.getElementById('resetArea');
+  const dataMgmt = document.getElementById('dataMgmt');
+  const recoveryGuide = document.getElementById('recoveryGuide');
   badge.textContent = a ? '🔓 管理模式' : '👀 访客模式';
   badge.className = 'mode-badge' + (a?' admin':'');
   btn.textContent = a ? '🔓' : '🔒';
   btn.className = 'lock-btn' + (a?' open':'');
   submitBtn.disabled = !a;
   submitBtn.textContent = a ? '💾 提交今日打卡' : '🔒 请先解锁';
-  resetArea.style.display = a ? 'block' : 'none';
+  // 数据管理仅管理模式显示
+  dataMgmt.style.display = a ? 'block' : 'none';
+  recoveryGuide.className = 'recovery-guide' + (a?' show':'');
   document.querySelectorAll('.edit-pts-btn').forEach(b=>{ b.style.display = a?'inline-block':'none'; });
+  updateDataInfo();
+  updateDateWarning();
 }
 
 // =========== DATA ===========
@@ -613,10 +656,20 @@ function getShopItems(){
 // 兼容旧版 done:{s1:true} 格式（bool转最高分）
 const KEY_RECORDS = 'fxc_records_v3';
 const KEY_REDEEMS = 'fxc_redeems_v2';
+const KEY_RECORDS_BACKUP = 'fxc_records_backup_v1';
+const KEY_REDEEMS_BACKUP = 'fxc_redeems_backup_v1';
 function loadRecords(){ try{ return JSON.parse(localStorage.getItem(KEY_RECORDS)||'{}'); }catch(e){ return {}; } }
-function saveRecords(r){ localStorage.setItem(KEY_RECORDS, JSON.stringify(r)); }
+function saveRecords(r){ 
+  localStorage.setItem(KEY_RECORDS, JSON.stringify(r)); 
+  try { localStorage.setItem(KEY_RECORDS_BACKUP, JSON.stringify(r)); } catch(e){}
+  updateDataInfo();
+}
 function loadRedeems(){ try{ return JSON.parse(localStorage.getItem(KEY_REDEEMS)||'[]'); }catch(e){ return []; } }
-function saveRedeems(r){ localStorage.setItem(KEY_REDEEMS, JSON.stringify(r)); }
+function saveRedeems(r){ 
+  localStorage.setItem(KEY_REDEEMS, JSON.stringify(r)); 
+  try { localStorage.setItem(KEY_REDEEMS_BACKUP, JSON.stringify(r)); } catch(e){}
+  updateDataInfo();
+}
 
 // 兼容旧格式：bool true → 该任务满分
 function getDoneVal(done, task){
@@ -862,16 +915,26 @@ function renderCheckSections(){
   // Submit area
   const badge=document.getElementById('submittedBadge');
   const btn=document.getElementById('submitBtn');
+  const isTodayVal=currentDate===todayStr();
   if(submitted){
     badge.style.display='block';
     document.getElementById('submittedScore').textContent=rec.score+' 分';
-    if(admin){ btn.textContent='✏️ 修改今日打卡'; btn.disabled=false; btn.onclick=editToday; }
+    if(admin){ 
+      btn.textContent=isTodayVal?'✏️ 修改今日打卡':('✏️ 修改 '+currentDate.slice(5)+' 记录'); 
+      btn.disabled=false; 
+      btn.onclick=editToday; 
+    }
     else{ btn.textContent='🔒 请先解锁'; btn.disabled=true; }
   } else {
     badge.style.display='none';
-    if(admin){ btn.textContent='💾 提交今日打卡'; btn.disabled=false; btn.onclick=submitToday; }
+    if(admin){ 
+      btn.textContent=isTodayVal?'💾 提交今日打卡':('💾 补录 '+currentDate.slice(5)); 
+      btn.disabled=false; 
+      btn.onclick=submitToday; 
+    }
     else{ btn.textContent='🔒 请先解锁'; btn.disabled=true; }
   }
+  updateDateWarning();
 }
 
 function setTaskVal(id, val){
@@ -980,6 +1043,7 @@ function goToday(){
   }
   document.getElementById('datePicker').value=currentDate;
   document.getElementById('dateLbl').textContent='今天';
+  document.getElementById('dateWarning').className='date-warning';
   renderCheckSections();
   renderStreak();
 }
@@ -997,6 +1061,7 @@ document.getElementById('datePicker').addEventListener('change',function(){
     checked['c5']=0;
   }
   document.getElementById('dateLbl').textContent=currentDate===todayStr()?'今天':currentDate.slice(5);
+  updateDateWarning();
   renderCheckSections();
   renderStreak();
 });
@@ -1363,29 +1428,138 @@ function showToast(msg){
 }
 function confirmReset(){
   if(!isAdmin()) return;
-  if(confirm('确定清除全部打卡数据和兑换记录吗？不可恢复！')){
+  if(confirm('⚠️ 最终确认：将清除全部打卡数据和兑换记录！\n\n建议先点击「💾 导出全部数据」保存备份。\n\n确定清除吗？此操作不可恢复！')){
     localStorage.removeItem(KEY_RECORDS);
     localStorage.removeItem(KEY_REDEEMS);
+    localStorage.removeItem(KEY_RECORDS_BACKUP);
+    localStorage.removeItem(KEY_REDEEMS_BACKUP);
     checked={}; bonusDesc='';
     renderAll();
     showToast('已清除全部数据');
   }
 }
 
+// =========== 数据管理 ===========
+function updateDataInfo(){
+  const records=loadRecords();
+  const redeems=loadRedeems();
+  const n=Object.keys(records).length;
+  const hasBackup=!!localStorage.getItem(KEY_RECORDS_BACKUP);
+  document.getElementById('dataInfo').innerHTML=`📦 历史记录：<b>${n}</b> 天 ｜ 兑换：<b>${redeems.length}</b> 次 ｜ 自动备份：<span style="color:${hasBackup?'var(--green)':'var(--red)'}">${hasBackup?'✅ 正常':'⚠️ 无'}</span>`;
+}
+
+function updateDateWarning(){
+  const warn=document.getElementById('dateWarning');
+  const isTodayVal=currentDate===todayStr();
+  if(!isTodayVal){
+    warn.className='date-warning show';
+    document.getElementById('warnDate').textContent=currentDate.slice(5);
+  } else {
+    warn.className='date-warning';
+  }
+}
+
+// 导出全部数据（下载JSON文件）
+function exportAllData(){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  const data={
+    exportedAt: new Date().toISOString(),
+    records: loadRecords(),
+    redeems: loadRedeems(),
+    shopPts: loadShopPts(),
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`fxc-checkin-backup-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ 数据已导出！请妥善保存');
+  updateDataInfo();
+}
+
+// 从备份恢复（先尝试自动恢复）
+function tryAutoRecover(){
+  const mainData=localStorage.getItem(KEY_RECORDS);
+  const backupData=localStorage.getItem(KEY_RECORDS_BACKUP);
+  // 只有主数据为空且有备份时才提示恢复
+  if((!mainData||mainData==='{}') && backupData && backupData!=='{}'){
+    try{
+      const backup=JSON.parse(backupData);
+      if(Object.keys(backup).length>0){
+        const mainParsed=mainData?JSON.parse(mainData):{};
+        if(Object.keys(mainParsed).length===0){
+          // 主数据为空，自动恢复
+          localStorage.setItem(KEY_RECORDS, backupData);
+          const redeemsBackup=localStorage.getItem(KEY_REDEEMS_BACKUP);
+          if(redeemsBackup) localStorage.setItem(KEY_REDEEMS, redeemsBackup);
+          console.log('✅ 自动从备份恢复了',Object.keys(backup).length,'条记录');
+          return true;
+        }
+      }
+    }catch(e){}
+  }
+  return false;
+}
+
+// 导入数据恢复
+function importAllData(input){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      let restored=0;
+      if(data.records){
+        const existing=loadRecords();
+        const merged={...existing,...data.records};
+        saveRecords(merged);
+        restored+=Object.keys(data.records).length;
+      }
+      if(data.redeems){
+        saveRedeems(data.redeems);
+        restored+=data.redeems.length;
+      }
+      if(data.shopPts){
+        saveShopPts(data.shopPts);
+      }
+      showToast(`✅ 已恢复 ${restored} 条数据`);
+      renderAll();
+    }catch(err){
+      showToast('❌ 文件格式错误，请选择正确的备份文件');
+    }
+  };
+  reader.readAsText(file);
+  input.value=''; // 允许重复导入同一文件
+}
+
 // =========== INIT ===========
 // 初始化：打开页面时默认给今天所有普通项满分，bonus项为0
 (function init(){
+  // 自动恢复：检测主数据是否丢丢失，尝试从备份恢复
+  const recovered=tryAutoRecover();
+  if(recovered) console.log('🔄 自动从备份恢复了数据');
+  
   const rec=loadRecords()[currentDate];
   if(rec){
     Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=getDoneVal(rec.done,t); });
+    checked['c5']=rec.done&&rec.done['c5']!==undefined?Number(rec.done['c5']):0;
     bonusDesc=rec.bonusDesc||'';
   } else {
     Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=t.isBonus?0:t.pts; });
+    checked['c5']=0;
   }
 })();
 document.getElementById('datePicker').value=currentDate;
 updateModeUI();
 renderAll();
+updateDataInfo();
+updateDateWarning();
 // 延迟检查周总结弹窗，避免和页面加载冲突
 setTimeout(checkWeeklyPopup, 800);
 </script>
