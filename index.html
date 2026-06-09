@@ -439,6 +439,7 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="data-btns">
     <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
     <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
+    <button class="data-btn" style="border-color:var(--sec);color:var(--sec)" onclick="rebuildJuneData()">🔄 重建6月1-8日数据</button>
     <button class="data-btn danger" onclick="confirmReset()">🗑 清除全部数据</button>
   </div>
   <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
@@ -1536,6 +1537,25 @@ function importAllData(input){
   };
   reader.readAsText(file);
   input.value=''; // 允许重复导入同一文件
+}
+
+// 一键重建6月1-8日数据（全部满分52分，其他加分0）
+function rebuildJuneData(){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  if(!confirm('将在不覆盖原有数据的前提下，补建 6月1日~6月8日 共 8 天记录（每日满分 52 分，其他加分 0）。\n\n已有记录的日期不会覆盖。\n\n确定重建？')) return;
+  const fullDone = {s1:2,s2:3, h1:1,h2:1,h3:1,h4:1,h5:1,h6:1, b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:1,b8:1,b9:1,b10:1,b11:1,b12:1,b13:1,b14:1,b15:1, c1:2,c2:2,c3:2,c4:2, e1:3,e2:2,e3:2,e4:2,e5:2,e6:2, c5:0};
+  const records = loadRecords();
+  let added = 0;
+  for(let i=1; i<=8; i++){
+    const ds = '2026-06-0'+i;
+    if(!records[ds]){
+      records[ds] = {score:52, done:JSON.parse(JSON.stringify(fullDone)), bonusDesc:''};
+      added++;
+    }
+  }
+  saveRecords(records);
+  showToast(`✅ 已重建 ${added} 天数据，刷新页面查看`);
+  if(added>0) renderAll();
 }
 
 // =========== INIT ===========
