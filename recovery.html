@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>数据救援工具 - 鑫澄打卡</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC',sans-serif;background:#FFF8F0;color:#222;padding:16px;max-width:480px;margin:0 auto}
+h1{font-size:18px;color:#FF7043;margin-bottom:4px}
+.sub{font-size:12px;color:#888;margin-bottom:16px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.badge-green{background:#E8F5E9;color:#26C97B}
+.badge-red{background:#FFEBEE;color:#F44336}
+.badge-yellow{background:#FFF8E1;color:#FFB300}
+.btn{width:100%;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,#FF7043,#FFB300);color:#fff}
+.btn-green{background:var(--green,#26C97B);color:#fff}
+.btn-blue{background:#2196F3;color:#fff}
+.btn-red{background:#F44336;color:#fff}
+.btn-outline{background:transparent;border:2px solid #FF7043;color:#FF7043}
+pre{background:#f5f5f5;border-radius:8px;padding:10px;font-size:11px;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px}
+.step{display:flex;gap:8px;margin-bottom:10px;align-items:flex-start}
+.step-num{width:24px;height:24px;border-radius:50%;background:#FF7043;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.step-body{flex:1;font-size:13px;line-height:1.5}
+.highlight{background:#FFF3E0;border-radius:8px;padding:8px 10px;font-size:12px;margin:8px 0;color:#E65100}
+</style>
+</head>
+<body>
+
+<h1>🩺 数据救援工具</h1>
+<p class="sub">扫描浏览器存储，找回丢失的打卡记录</p>
+
+<!-- 扫描结果 -->
+<div class="card">
+  <div class="card-title">📊 扫描结果</div>
+  <div id="scanResult">点击「开始扫描」...</div>
+  <button class="btn btn-primary" onclick="doScan()">🔍 开始扫描</button>
+</div>
+
+<!-- 手动恢复 -->
+<div class="card">
+  <div class="card-title">📥 手动恢复（粘贴备份数据）</div>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">如果你有之前导出的 JSON 备份文件，点击下方按钮选择文件恢复</div>
+  </div>
+  <input type="file" id="importFile" accept=".json" onchange="doImport(this)" style="display:none">
+  <button class="btn btn-green" onclick="document.getElementById('importFile').click()">📂 选择备份文件恢复</button>
+  <div class="step" style="margin-top:12px">
+    <div class="step-num">2</div>
+    <div class="step-body">或者，如果你有备份的文本内容，粘贴到下方输入框</div>
+  </div>
+  <textarea id="pasteArea" placeholder="粘贴 JSON 数据..." style="width:100%;height:80px;border:2px solid #ddd;border-radius:8px;padding:8px;font-size:12px;resize:vertical;outline:none;font-family:monospace"></textarea>
+  <button class="btn btn-blue" onclick="doPasteRestore()" style="margin-top:8px">📥 从粘贴内容恢复</button>
+</div>
+
+<!-- 重建工具 -->
+<div class="card">
+  <div class="card-title">🛠️ 手动重建（6月1日～8日）</div>
+  <div class="highlight">⚠️ 如果你记得这几天的大致得分，可以用这个工具手动重建记录</div>
+  <div id="rebuildArea"></div>
+  <button class="btn btn-outline" onclick="doRebuild()" id="rebuildBtn">➕ 添加一天记录</button>
+  <button class="btn btn-primary" onclick="saveRebuild()" id="saveRebuildBtn" style="display:none">💾 保存重建记录</button>
+</div>
+
+<!-- 跳转 -->
+<div class="card" style="text-align:center">
+  <div class="card-title">✅ 恢复完成后</div>
+  <p style="font-size:12px;color:#888;margin-bottom:12px">恢复完成后，点击下方按钮回到打卡系统</p>
+  <button class="btn btn-green" onclick="window.location.href='index.html'">🏠 回到打卡系统</button>
+</div>
+
+<!-- 隐私说明 -->
+<div style="text-align:center;font-size:11px;color:#ccc;margin-top:16px;padding-bottom:20px">
+  所有操作仅在本地浏览器进行，数据不会上传到任何服务器
+</div>
+
+<script>
+// =========== 扫描 ===========
+function doScan(){
+  const resultEl=document.getElementById('scanResult');
+  let html='';
+  
+  // 扫描所有可能的键
+  const keysToCheck=[
+    'fxc_records_v3','fxc_redeems_v2',
+    'fxc_records_backup_v1','fxc_redeems_backup_v1',
+    'fxc_records_v2','fxc_redeems_v1',
+    'fxc_records_v1','fxc_redeems_v0',
+    'fxc_shop_pts_v2'
+  ];
+  
+  let foundAny=false;
+  html='<div style="display:flex;flex-direction:column;gap:6px">';
+  
+  keysToCheck.forEach(key=>{
+    const raw=localStorage.getItem(key);
+    if(raw){
+      foundAny=true;
+      try{
+        const parsed=JSON.parse(raw);
+        let info='';
+        if(Array.isArray(parsed)){
+          info=`数组，共 <b>${parsed.length}</b> 条`;
+        } else if(typeof parsed==='object'){
+          info=`对象，共 <b>${Object.keys(parsed).length}</b> 条`;
+        }
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#E8F5E9;border-radius:8px;font-size:12px">
+          <span><code style="background:#C8E6C9;padding:2px 6px;border-radius:4px;font-size:11px">${key}</code></span>
+          <span class="badge badge-green">✅ 有数据：${info}</span>
+        </div>`;
+        // 显示前3个键名（如果是对象）
+        if(typeof parsed==='object'&&!Array.isArray(parsed)){
+          const sample=Object.keys(parsed).slice(0,3).join(', ');
+          html+=`<div style="font-size:11px;color:#888;padding:0 10px 6px">样本日期：${sample}</div>`;
+        }
+      }catch(e){
+        html+=`<div style="padding:6px 10px;background:#FFEBEE;border-radius:8px;font-size:12px">
+          <code style="background:#FFCDD2;padding:2px 6px;border-radius:4px;font-size:11px">${key}</code>
+          <span class="badge badge-red">⚠️ 解析失败</span>
+        </div>`;
+      }
+    } else {
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f5f5f5;border-radius:8px;font-size:12px;color:#aaa">
+        <span><code style="font-size:11px">${key}</code></span>
+        <span class="badge badge-red">空</span>
+      </div>`;
+    }
+  });
+  
+  html+='</div>';
+  
+  if(!foundAny){
+    html='<div style="text-align:center;padding:16px;color:#F44336">'+
+      '<div style="font-size:40px;margin-bottom:8px">😔</div>'+
+      '<div style="font-weight:700;margin-bottom:4px">所有存储键均为空</div>'+
+      '<div style="font-size:12px;color:#888">数据可能已被清除，或从未在此浏览器保存过。</div>'+
+      '</div>';
+  } else {
+    html='<div style="margin-bottom:10px"><span class="badge badge-green">✅ 找到数据！</span> 下方显示所有找到的存储键</div>'+html;
+    // 自动恢复按钮
+    html+='<button class="btn btn-green" onclick="doAutoRecover()" style="margin-top:10px">🩹 自动恢复找到的数据</button>';
+  }
+  
+  resultEl.innerHTML=html;
+}
+
+// =========== 自动恢复 ===========
+function doAutoRecover(){
+  const keyMap={
+    'fxc_records_backup_v1':'fxc_records_v3',
+    'fxc_redeems_backup_v1':'fxc_redeems_v2',
+    'fxc_records_v2':'fxc_records_v3',
+    'fxc_redeems_v1':'fxc_redeems_v2',
+    'fxc_records_v1':'fxc_records_v3',
+  };
+  let recovered=0;
+  Object.entries(keyMap).forEach(([srcKey,dstKey])=>{
+    const raw=localStorage.getItem(srcKey);
+    if(raw){
+      try{
+        // 尝试合并（不覆盖已有数据）
+        const srcData=JSON.parse(raw);
+        const dstRaw=localStorage.getItem(dstKey)||'{}';
+        const dstData=JSON.parse(dstRaw);
+        const merged={...srcData,...dstData}; // 目标数据优先
+        localStorage.setItem(dstKey,JSON.stringify(merged));
+        recovered+=Object.keys(srcData).length;
+        console.log(`✅ 从 ${srcKey} 恢复到 ${dstKey}，共 ${Object.keys(srcData).length} 条`);
+      }catch(e){console.error('恢复失败:',srcKey,e)}
+    }
+  });
+  if(recovered>0){
+    alert(`✅ 成功恢复 ${recovered} 条数据！\n\n请点击底部「回到打卡系统」查看。`);
+    doScan(); // 刷新扫描结果
+  } else {
+    alert('⚠️ 未找到可自动恢复的数据。\n\n请尝试「手动恢复」或「手动重建」。');
+  }
+}
+
+// =========== 导入文件 ===========
+function doImport(input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      let count=0;
+      if(data.records){
+        const existing=JSON.parse(localStorage.getItem('fxc_records_v3')||'{}');
+        const merged={...existing,...data.records};
+        localStorage.setItem('fxc_records_v3',JSON.stringify(merged));
+        count+=Object.keys(data.records).length;
+      }
+      if(data.redeems){
+        localStorage.setItem('fxc_redeems_v2',JSON.stringify(data.redeems));
+        count+=data.redeems.length;
+      }
+      alert(`✅ 成功恢复 ${count} 条数据！`);
+      doScan();
+    }catch(err){
+      alert('❌ 文件格式错误：'+err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+// =========== 粘贴恢复 ===========
+function doPasteRestore(){
+  const text=document.getElementById('pasteArea').value.trim();
+  if(!text){alert('请先粘贴数据');return}
+  try{
+    const data=JSON.parse(text);
+    let count=0;
+    if(data.records){
+      const existing=JSON.parse(localStorage.getItem('fxc_records_v3')||'{}');
+      const merged={...existing,...data.records};
+      localStorage.setItem('fxc_records_v3',JSON.stringify(merged));
+      count+=Object.keys(data.records).length;
+    }
+    if(data.redeems){
+      localStorage.setItem('fxc_redeems_v2',JSON.stringify(data.redeems));
+      count+=data.redeems.length;
+    }
+    // 也可能是纯记录对象（没有 records 包装）
+    if(!data.records&&typeof data==='object'&&!Array.isArray(data)){
+      const existing=JSON.parse(localStorage.getItem('fxc_records_v3')||'{}');
+      const merged={...existing,...data};
+      localStorage.setItem('fxc_records_v3',JSON.stringify(merged));
+      count=Object.keys(data).length;
+    }
+    alert(`✅ 成功恢复 ${count} 条数据！`);
+    doScan();
+  }catch(err){
+    alert('❌ JSON 格式错误：'+err.message);
+  }
+}
+
+// =========== 手动重建 ===========
+let rebuildData=[];
+function doRebuild(){
+  const area=document.getElementById('rebuildArea');
+  const idx=rebuildData.length;
+  rebuildData.push({date:'2026-06-'+(idx+1).toString().padStart(2,'0'),score:0,items:{}});
+  
+  renderRebuild();
+  document.getElementById('saveRebuildBtn').style.display='block';
+}
+
+function renderRebuild(){
+  const area=document.getElementById('rebuildArea');
+  const tasks=[
+    {id:'s1',name:'骑车安全',max:2},
+    {id:'s2',name:'外出安全',max:3},
+    {id:'h1',name:'好好吃饭',max:1},
+    {id:'h2',name:'户外运动',max:1},
+    {id:'h3',name:'跳绳',max:1},
+    {id:'h4',name:'吊单杠',max:1},
+    {id:'h5',name:'洗澡洗漱',max:1},
+    {id:'h6',name:'独立如厕',max:1},
+  ];
+  
+  let html='';
+  rebuildData.forEach((d,i)=>{
+    html+=`<div style="border:1px solid #eee;border-radius:10px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input type="date" value="${d.date}" onchange="rebuildData[${i}].date=this.value;calcScore(${i})" style="flex:1;border:1px solid #ddd;border-radius:6px;padding:4px;font-size:13px">
+        <span style="font-weight:700;color:#FF7043;min-width:60px;text-align:right" id="rbScore${i}">0分</span>
+      </div>`;
+    tasks.forEach(t=>{
+      const val=d.items[t.id]||0;
+      html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">
+        <span style="flex:1">${t.name}</span>
+        <input type="range" min="0" max="${t.max}" value="${val}" oninput="rebuildData[${i}].items['${t.id}']=+this.value;calcScore(${i})" style="flex:1">
+        <span style="min-width:20px;text-align:center;font-weight:700" id="rbVal${i}_${t.id}">${val}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  area.innerHTML=html;
+}
+
+function calcScore(idx){
+  const d=rebuildData[idx];
+  const allTasks={s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,h7:1,h8:1,h9:1,h10:1,h11:1,h12:1,h13:1,h14:1,h15:1,c1:2,c2:2,c3:2,c4:2,e1:3,e2:2,e3:2,e4:2,e5:2,e6:2};
+  let score=0;
+  Object.entries(d.items).forEach(([id,val])=>{score+=val;});
+  d.score=score;
+  const el=document.getElementById('rbScore'+idx);
+  if(el) el.textContent=score+'分';
+}
+
+function saveRebuild(){
+  const records=JSON.parse(localStorage.getItem('fxc_records_v3')||'{}');
+  rebuildData.forEach(d=>{
+    if(d.date&&d.score>=0){
+      records[d.date]={score:d.score,done:d.items,bonusDesc:''};
+    }
+  });
+  localStorage.setItem('fxc_records_v3',JSON.stringify(records));
+  alert(`✅ 已保存 ${rebuildData.length} 天重建记录！`);
+  rebuildData=[];
+  document.getElementById('rebuildArea').innerHTML='';
+  document.getElementById('saveRebuildBtn').style.display='none';
+  doScan();
+}
+</script>
+</body>
+</html>
