@@ -3,102 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>一键重建6月数据</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>鑫澄打卡 · 数据修正</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'PingFang SC',sans-serif;background:#FFF8F0;padding:40px 20px;text-align:center;max-width:420px;margin:0 auto}
-.emoji{font-size:60px}
-h1{font-size:20px;color:#FF7043;margin:12px 0 8px}
-p{color:#888;font-size:13px;line-height:1.8;margin-bottom:20px}
-.btn{display:block;width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:700;cursor:pointer;margin:10px 0;transition:transform .1s}
-.btn:active{transform:scale(.96)}
-.btn-warn{background:#FFF3E0;color:#E65100;border:2px solid #FFB300}
-.btn-go{background:linear-gradient(135deg,#FF7043,#FFB300);color:#fff;box-shadow:0 4px 16px rgba(255,112,67,.3)}
-.btn-go:disabled{opacity:.5}
-pre{background:#F5F5F5;border-radius:8px;padding:12px;text-align:left;font-size:11px;overflow-x:auto;margin:10px 0;max-height:200px;overflow-y:auto;white-space:pre-wrap}
-.msg{padding:12px;border-radius:10px;font-size:13px;margin:10px 0;display:none}
-.msg.ok{background:#E8F5E9;color:#2E7D32}
-.msg.err{background:#FFEBEE;color:#C62828}
-.msg.info{background:#E3F2FD;color:#1565C0}
+body{font-family:-apple-system,'PingFang SC',sans-serif;background:#FFF8F0;padding:32px 20px;text-align:center;max-width:420px;margin:0 auto}
+.emoji{font-size:52px}
+h1{font-size:20px;color:#FF7043;margin:12px 0 6px}
+p{color:#888;font-size:13px;line-height:1.8;margin-bottom:16px}
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin:10px 0;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-scan{background:#FFF3E0;color:#E65100;border:2px solid #FFB300}
+.btn-fix{background:linear-gradient(135deg,#FF7043,#FFB300);color:#fff;box-shadow:0 4px 16px rgba(255,112,67,.3)}
+.btn-fix:disabled{opacity:.5;cursor:not-allowed}
+.table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;text-align:left;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.table th{background:#FF7043;color:#fff;padding:8px 12px}
+.table td{padding:8px 12px;border-bottom:1px solid #f5f0ec}
+.table tr:last-child td{border-bottom:none}
+.old{color:#ccc;text-decoration:line-through}
+.new{color:#FF7043;font-weight:700}
+.msg{padding:12px 14px;border-radius:10px;font-size:13px;margin:10px 0;display:none;text-align:left;line-height:1.8}
+.msg.ok{background:#E8F5E9;color:#2E7D32;display:block}
+.msg.err{background:#FFEBEE;color:#C62828;display:block}
+.msg.info{background:#E3F2FD;color:#1565C0;display:block}
+pre{background:#F5F5F5;border-radius:8px;padding:12px;text-align:left;font-size:11px;overflow-x:auto;margin:8px 0;max-height:180px;overflow-y:auto;white-space:pre-wrap;display:none}
 </style>
 </head>
 <body>
 
-<div class="emoji">🩺</div>
-<h1>鑫澄打卡 · 数据救援</h1>
-<p>一键重建 6月1日-8日 共8天数据<br>每日满分52分，不覆盖已有记录</p>
+<div class="emoji">🛠️</div>
+<h1>鑫澄打卡 · 数据修正</h1>
+<p>将6月1日-7日的分数<br>修正为实际打卡得分</p>
 
-<button class="btn btn-warn" onclick="scanData()">🔍 先扫描当前数据</button>
-<div class="msg info" id="scanMsg"></div>
-<pre id="scanResult" style="display:none"></pre>
+<table class="table">
+  <tr><th>日期</th><th>原数据</th><th>修正后</th></tr>
+  <tr><td>06-01</td><td class="old">52分</td><td class="new">25分</td></tr>
+  <tr><td>06-02</td><td class="old">52分</td><td class="new">17分</td></tr>
+  <tr><td>06-03</td><td class="old">52分</td><td class="new">28分</td></tr>
+  <tr><td>06-04</td><td class="old">52分</td><td class="new">21分</td></tr>
+  <tr><td>06-05</td><td class="old">52分</td><td class="new">26分</td></tr>
+  <tr><td>06-06</td><td class="old">52分</td><td class="new">21分</td></tr>
+  <tr><td>06-07</td><td class="old">52分</td><td class="new">22分</td></tr>
+  <tr><td>06-08</td><td>28分</td><td style="color:var(--green,#26C97B)">不动</td></tr>
+  <tr><td>06-09</td><td>33分</td><td style="color:var(--green,#26C97B)">不动</td></tr>
+</table>
 
-<button class="btn btn-go" id="goBtn" onclick="rebuild()" disabled>🔄 一键重建6月1-8日数据</button>
-<div class="msg ok" id="okMsg"></div>
-<div class="msg err" id="errMsg"></div>
+<button class="btn btn-scan" onclick="scan()">🔍 先扫描当前数据</button>
+<div id="scanMsg" class="msg" style="display:none"></div>
+<pre id="scanPre"></pre>
 
-<p style="font-size:11px;color:#aaa;margin-top:16px">操作成功后，刷新打卡页面即可看到数据。</p>
+<button class="btn btn-fix" id="fixBtn" onclick="doFix()" disabled>✅ 确认修正6月1-7日数据</button>
+<div id="resultMsg" class="msg" style="display:none"></div>
+
+<p style="font-size:11px;color:#bbb;margin-top:20px">修正后刷新打卡页即可查看正确数据。<br>06-08、06-09数据不会被修改。</p>
 
 <script>
-const KEY_RECORDS = 'fxc_records_v3';
-const KEY_BACKUP  = 'fxc_records_backup_v1';
-const KEY_REDEEMS = 'fxc_redeems_v2';
-const KEY_REDBACK = 'fxc_redeems_backup_v1';
+const KEY = 'fxc_records_v3';
+const KEY_BK = 'fxc_records_backup_v1';
 
-function loadRecords(){ try{return JSON.parse(localStorage.getItem(KEY_RECORDS)||'{}')}catch(e){return{}} }
+// 每天正确的done值（经过精确计算，加总等于目标分）
+const CORRECT = {
+  '2026-06-01': { score:25, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:1,b8:1,b9:1,b10:0,b11:0,b12:0,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+  '2026-06-02': { score:17, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:0,b5:0,b6:0,b7:0,b8:0,b9:0,b10:0,b11:0,b12:0,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+  '2026-06-03': { score:28, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:1,b8:1,b9:1,b10:1,b11:1,b12:1,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+  '2026-06-04': { score:21, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:2,b5:2,b6:0,b7:0,b8:0,b9:0,b10:0,b11:0,b12:0,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+  '2026-06-05': { score:26, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:1,b8:1,b9:1,b10:1,b11:0,b12:0,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+  '2026-06-06': { score:21, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:2,b5:2,b6:0,b7:0,b8:0,b9:0,b10:0,b11:0,b12:0,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+  '2026-06-07': { score:22, bonusDesc:'', done:{s1:2,s2:3,h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:0,b8:0,b9:0,b10:0,b11:0,b12:0,b13:0,b14:0,b15:0,c1:0,c2:0,c3:0,c4:0,e1:0,e2:0,e3:0,e4:0,e5:0,e6:0,c5:0} },
+};
 
-function scanData(){
-  const records = loadRecords();
-  const days = Object.keys(records).sort();
+function loadR(){ try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}} }
+
+function scan(){
+  const r = loadR();
+  const days = Object.keys(r).sort();
   const msg = document.getElementById('scanMsg');
-  const pre = document.getElementById('scanResult');
-  const btn = document.getElementById('goBtn');
-  
+  const pre = document.getElementById('scanPre');
   msg.style.display='block';
-  
   if(days.length===0){
-    msg.className='msg info';
-    msg.innerHTML='📭 当前 <b>0 条</b> 打卡记录，数据已丢失，请重建。';
+    msg.className='msg info'; msg.innerHTML='📭 当前没有打卡记录';
     pre.style.display='none';
   } else {
-    msg.className='msg ok';
-    msg.innerHTML='✅ 当前有 <b>'+days.length+' 条</b> 打卡记录';
+    msg.className='msg ok'; msg.innerHTML='✅ 当前共 <b>'+days.length+'</b> 条记录，可以修正';
     pre.style.display='block';
-    let text = '';
-    days.forEach(d=>{ const r=records[d]; text+=d.slice(5)+'  '+r.score+'分'+(r.bonusDesc?' +'+r.bonusDesc:'')+'\n'; });
-    pre.textContent=text;
+    pre.textContent = days.map(d=>{ const v=r[d]; return d.slice(5)+'  '+v.score+'分'+(v.bonusDesc?' +'+v.bonusDesc:''); }).join('\n');
   }
-  btn.disabled=false;
+  document.getElementById('fixBtn').disabled=false;
 }
 
-function rebuild(){
-  if(!confirm('确定重建 6月1日-8日 共8天数据？\n（已有记录不会覆盖）')) return;
-  
-  const fullDone = {
-    s1:2,s2:3, h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,
-    b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:1,b8:1,b9:1,b10:1,b11:1,b12:1,b13:1,b14:1,b15:1,
-    c1:2,c2:2,c3:2,c4:2, e1:3,e2:2,e3:2,e4:2,e5:2,e6:2, c5:0
-  };
-  
-  const records = loadRecords();
-  let added = 0, skipped = 0;
-  for(let i=1; i<=8; i++){
-    const ds = '2026-06-0'+i;
-    if(records[ds]){ skipped++; continue; }
-    records[ds] = {score:52, done:JSON.parse(JSON.stringify(fullDone)), bonusDesc:''};
-    added++;
-  }
-  
-  localStorage.setItem(KEY_RECORDS, JSON.stringify(records));
-  localStorage.setItem(KEY_BACKUP, JSON.stringify(records));
-  
-  const ok = document.getElementById('okMsg');
-  ok.style.display='block';
-  ok.innerHTML='✅ 重建完成！新增 <b>'+added+'</b> 天，跳过 <b>'+skipped+'</b> 天（已有）<br><br>请打开打卡页面刷新即可查看。';
-  
-  document.getElementById('goBtn').disabled=true;
-  scanData();
+function doFix(){
+  if(!confirm('将6月1日-7日的分数修正为实际值\n（06-08、06-09不会被修改）\n\n确认修正？')) return;
+  const r = loadR();
+  let fixed=0;
+  Object.entries(CORRECT).forEach(([ds, data])=>{
+    // 保留原有bonusDesc（如果有）
+    const existing = r[ds];
+    r[ds] = {
+      score: data.score,
+      done: JSON.parse(JSON.stringify(data.done)),
+      bonusDesc: (existing && existing.bonusDesc) ? existing.bonusDesc : data.bonusDesc
+    };
+    fixed++;
+  });
+  localStorage.setItem(KEY, JSON.stringify(r));
+  localStorage.setItem(KEY_BK, JSON.stringify(r));
+  const msg = document.getElementById('resultMsg');
+  msg.style.display='block';
+  msg.className='msg ok';
+  msg.innerHTML='✅ 修正完成！共更新 <b>'+fixed+'</b> 天<br>'
+    +'<br>📊 修正后汇总：'
+    +'<br>06-01: 25分 ｜ 06-02: 17分 ｜ 06-03: 28分'
+    +'<br>06-04: 21分 ｜ 06-05: 26分 ｜ 06-06: 21分 ｜ 06-07: 22分'
+    +'<br>7天合计：<b>160分</b>'
+    +'<br><br>请返回打卡页刷新查看。';
+  document.getElementById('fixBtn').disabled=true;
+  scan();
 }
 </script>
-
 </body>
 </html>
