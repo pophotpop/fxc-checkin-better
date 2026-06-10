@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>一键重建6月数据</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC',sans-serif;background:#FFF8F0;padding:40px 20px;text-align:center;max-width:420px;margin:0 auto}
+.emoji{font-size:60px}
+h1{font-size:20px;color:#FF7043;margin:12px 0 8px}
+p{color:#888;font-size:13px;line-height:1.8;margin-bottom:20px}
+.btn{display:block;width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:700;cursor:pointer;margin:10px 0;transition:transform .1s}
+.btn:active{transform:scale(.96)}
+.btn-warn{background:#FFF3E0;color:#E65100;border:2px solid #FFB300}
+.btn-go{background:linear-gradient(135deg,#FF7043,#FFB300);color:#fff;box-shadow:0 4px 16px rgba(255,112,67,.3)}
+.btn-go:disabled{opacity:.5}
+pre{background:#F5F5F5;border-radius:8px;padding:12px;text-align:left;font-size:11px;overflow-x:auto;margin:10px 0;max-height:200px;overflow-y:auto;white-space:pre-wrap}
+.msg{padding:12px;border-radius:10px;font-size:13px;margin:10px 0;display:none}
+.msg.ok{background:#E8F5E9;color:#2E7D32}
+.msg.err{background:#FFEBEE;color:#C62828}
+.msg.info{background:#E3F2FD;color:#1565C0}
+</style>
+</head>
+<body>
+
+<div class="emoji">🩺</div>
+<h1>鑫澄打卡 · 数据救援</h1>
+<p>一键重建 6月1日-8日 共8天数据<br>每日满分52分，不覆盖已有记录</p>
+
+<button class="btn btn-warn" onclick="scanData()">🔍 先扫描当前数据</button>
+<div class="msg info" id="scanMsg"></div>
+<pre id="scanResult" style="display:none"></pre>
+
+<button class="btn btn-go" id="goBtn" onclick="rebuild()" disabled>🔄 一键重建6月1-8日数据</button>
+<div class="msg ok" id="okMsg"></div>
+<div class="msg err" id="errMsg"></div>
+
+<p style="font-size:11px;color:#aaa;margin-top:16px">操作成功后，刷新打卡页面即可看到数据。</p>
+
+<script>
+const KEY_RECORDS = 'fxc_records_v3';
+const KEY_BACKUP  = 'fxc_records_backup_v1';
+const KEY_REDEEMS = 'fxc_redeems_v2';
+const KEY_REDBACK = 'fxc_redeems_backup_v1';
+
+function loadRecords(){ try{return JSON.parse(localStorage.getItem(KEY_RECORDS)||'{}')}catch(e){return{}} }
+
+function scanData(){
+  const records = loadRecords();
+  const days = Object.keys(records).sort();
+  const msg = document.getElementById('scanMsg');
+  const pre = document.getElementById('scanResult');
+  const btn = document.getElementById('goBtn');
+  
+  msg.style.display='block';
+  
+  if(days.length===0){
+    msg.className='msg info';
+    msg.innerHTML='📭 当前 <b>0 条</b> 打卡记录，数据已丢失，请重建。';
+    pre.style.display='none';
+  } else {
+    msg.className='msg ok';
+    msg.innerHTML='✅ 当前有 <b>'+days.length+' 条</b> 打卡记录';
+    pre.style.display='block';
+    let text = '';
+    days.forEach(d=>{ const r=records[d]; text+=d.slice(5)+'  '+r.score+'分'+(r.bonusDesc?' +'+r.bonusDesc:'')+'\n'; });
+    pre.textContent=text;
+  }
+  btn.disabled=false;
+}
+
+function rebuild(){
+  if(!confirm('确定重建 6月1日-8日 共8天数据？\n（已有记录不会覆盖）')) return;
+  
+  const fullDone = {
+    s1:2,s2:3, h1:1,h2:1,h3:1,h4:1,h5:1,h6:1,
+    b1:2,b2:2,b3:2,b4:2,b5:2,b6:1,b7:1,b8:1,b9:1,b10:1,b11:1,b12:1,b13:1,b14:1,b15:1,
+    c1:2,c2:2,c3:2,c4:2, e1:3,e2:2,e3:2,e4:2,e5:2,e6:2, c5:0
+  };
+  
+  const records = loadRecords();
+  let added = 0, skipped = 0;
+  for(let i=1; i<=8; i++){
+    const ds = '2026-06-0'+i;
+    if(records[ds]){ skipped++; continue; }
+    records[ds] = {score:52, done:JSON.parse(JSON.stringify(fullDone)), bonusDesc:''};
+    added++;
+  }
+  
+  localStorage.setItem(KEY_RECORDS, JSON.stringify(records));
+  localStorage.setItem(KEY_BACKUP, JSON.stringify(records));
+  
+  const ok = document.getElementById('okMsg');
+  ok.style.display='block';
+  ok.innerHTML='✅ 重建完成！新增 <b>'+added+'</b> 天，跳过 <b>'+skipped+'</b> 天（已有）<br><br>请打开打卡页面刷新即可查看。';
+  
+  document.getElementById('goBtn').disabled=true;
+  scanData();
+}
+</script>
+
+</body>
+</html>
