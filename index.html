@@ -340,6 +340,31 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <button class="db-today" onclick="goToday()">今天</button>
 </div>
 
+<!-- SECTION: 设置 -->
+<div class="section" id="sec-settings">
+  <div class="section-header">
+    <span class="sh-icon">⚙️</span>
+    <span class="sh-title">设置</span>
+  </div>
+  <div class="data-mgmt" id="dataMgmt">
+    <div class="data-info" id="dataInfo">📦 历史记录：<b>0</b> 天 ｜ 备份状态：<span id="backupStatus">--</span></div>
+    <div class="data-btns">
+      <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
+      <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
+      <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="copyBackup()">📋 复制数据备份</button>
+      <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="pasteBackup()">📤 粘贴数据恢复</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
+  </div>
+  <div class="recovery-guide" id="recoveryGuide" style="margin-top:12px;font-size:13px">
+    <div style="font-weight:700;margin-bottom:4px">🔍 数据恢复指引</div>
+    <div style="margin-bottom:4px">如果历史记录突然消失，先检查数据是否还在：</div>
+    手机浏览器地址栏输入：<br>
+    <code>javascript:void(prompt('历史记录',JSON.stringify(JSON.parse(localStorage.fxc_records_v3||'{}'),null,2)))</code><br>
+    <span style="color:var(--sub)">拷贝整行→粘贴到地址栏→回车→看弹窗。若有数据则文件还在，可导出备份再恢复。</span>
+  </div>
+</div>
+
 <!-- SECTION: 安全 -->
 <div class="section" id="sec-safety">
   <div class="section-header">
@@ -427,27 +452,6 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="redeem-overview" id="shopRedeemBottom"></div>
 </div>
 
-<!-- Recovery Guide -->
-<div class="recovery-guide" id="recoveryGuide">
-  <div style="font-weight:700;margin-bottom:4px">🔍 数据恢复指引</div>
-  <div style="margin-bottom:4px">如果历史记录突然消失，先检查数据是否还在：</div>
-  手机浏览器地址栏输入：<br>
-  <code>javascript:void(prompt('历史记录',JSON.stringify(JSON.parse(localStorage.fxc_records_v3||'{}'),null,2)))</code><br>
-  <span style="color:var(--sub)">拷贝整行→粘贴到地址栏→回车→看弹窗。若有数据则文件还在，可导出备份再恢复。</span>
-</div>
-
-<!-- Data Mgmt -->
-<div class="data-mgmt" id="dataMgmt">
-  <div class="data-info" id="dataInfo">📦 历史记录：<b>0</b> 天 ｜ 备份状态：<span id="backupStatus">--</span></div>
-  <div class="data-btns">
-    <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
-    <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
-    <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="copyBackup()">📋 复制数据备份</button>
-    <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="pasteBackup()">📤 粘贴数据恢复</button>
-  </div>
-  <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
-</div>
-
 <!-- Reset -->
 <div class="reset-area" id="resetArea"></div>
 
@@ -457,6 +461,7 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="bn-item" onclick="scrollToSection('sec-safety')"><div class="bn-icon">🛡️</div>安全</div>
   <div class="bn-item" onclick="scrollToSection('sec-habit')"><div class="bn-icon">⭐</div>习惯</div>
   <div class="bn-item" onclick="scrollToSection('sec-study')"><div class="bn-icon">📚</div>学习</div>
+  <div class="bn-item" onclick="scrollToSection('sec-settings')"><div class="bn-icon">⚙️</div>设置</div>
   <div class="bn-item" onclick="scrollToSection('sec-shop')"><div class="bn-icon">🛒</div>超市</div>
 </div>
 
