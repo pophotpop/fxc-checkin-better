@@ -442,8 +442,8 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="data-btns">
     <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
     <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
-    <button class="data-btn" style="border-color:var(--sec);color:var(--sec)" onclick="rebuildJuneData()">🔄 重建6月1-8日数据</button>
-    <button class="data-btn danger" onclick="confirmReset()">🗑 清除全部数据</button>
+    <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="copyBackup()">📋 复制数据备份</button>
+    <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="pasteBackup()">📤 粘贴数据恢复</button>
   </div>
   <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
 </div>
@@ -1483,6 +1483,63 @@ function exportAllData(){
   URL.revokeObjectURL(url);
   showToast('✅ 数据已导出！请妥善保存');
   updateDataInfo();
+}
+
+// 复制数据到剪贴板（微信内置浏览器可用）
+function copyBackup(){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  const data={
+    exportedAt: new Date().toISOString(),
+    records: loadRecords(),
+    redeems: loadRedeems(),
+    shopPts: loadShopPts(),
+  };
+  const jsonStr = JSON.stringify(data);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(jsonStr).then(function(){
+      showToast('✅ 数据已复制到剪贴板！去微信粘贴保存');
+    }).catch(function(){
+      fallbackCopy(jsonStr);
+    });
+  } else {
+    fallbackCopy(jsonStr);
+  }
+  updateDataInfo();
+}
+function fallbackCopy(text){
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast('✅ 数据已复制！去微信粘贴保存'); }
+  catch(e){ prompt('请长按复制全部数据', text); }
+  document.body.removeChild(ta);
+}
+// 从剪贴板粘贴恢复数据
+async function pasteBackup(){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  var jsonStr = '';
+  try {
+    if(navigator.clipboard && navigator.clipboard.readText){
+      jsonStr = await navigator.clipboard.readText();
+    }
+  }catch(e){}
+  if(!jsonStr){ jsonStr = prompt('请把备份数据粘贴到下方：',''); if(!jsonStr) return; }
+  try{
+    var data = JSON.parse(jsonStr);
+    var restored = 0;
+    if(data.records){
+      var existing = loadRecords();
+      var merged = Object.assign({}, existing, data.records);
+      saveRecords(merged);
+      restored += Object.keys(data.records).length;
+    }
+    if(data.redeems){ saveRedeems(data.redeems); restored += data.redeems.length; }
+    if(data.shopPts){ saveShopPts(data.shopPts); }
+    showToast('✅ 已恢复 '+restored+' 条数据');
+    renderAll();
+  }catch(err){ showToast('❌ 数据格式错误，请确认复制的是完整备份数据'); }
 }
 
 // 从备份恢复（先尝试自动恢复）
