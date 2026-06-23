@@ -340,31 +340,6 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <button class="db-today" onclick="goToday()">今天</button>
 </div>
 
-<!-- SECTION: 设置 -->
-<div class="section" id="sec-settings">
-  <div class="section-header">
-    <span class="sh-icon">⚙️</span>
-    <span class="sh-title">设置</span>
-  </div>
-  <div class="data-mgmt" id="dataMgmt">
-    <div class="data-info" id="dataInfo">📦 历史记录：<b>0</b> 天 ｜ 备份状态：<span id="backupStatus">--</span></div>
-    <div class="data-btns">
-      <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
-      <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
-      <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="copyBackup()">📋 复制数据备份</button>
-      <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="pasteBackup()">📤 粘贴数据恢复</button>
-    </div>
-    <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
-  </div>
-  <div class="recovery-guide" id="recoveryGuide" style="margin-top:12px;font-size:13px">
-    <div style="font-weight:700;margin-bottom:4px">🔍 数据恢复指引</div>
-    <div style="margin-bottom:4px">如果历史记录突然消失，先检查数据是否还在：</div>
-    手机浏览器地址栏输入：<br>
-    <code>javascript:void(prompt('历史记录',JSON.stringify(JSON.parse(localStorage.fxc_records_v3||'{}'),null,2)))</code><br>
-    <span style="color:var(--sub)">拷贝整行→粘贴到地址栏→回车→看弹窗。若有数据则文件还在，可导出备份再恢复。</span>
-  </div>
-</div>
-
 <!-- SECTION: 安全 -->
 <div class="section" id="sec-safety">
   <div class="section-header">
@@ -410,7 +385,7 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="section-header">
     <span class="sh-icon">📚</span>
     <span class="sh-title">五、学习 · 预备小学生</span>
-    <span class="sh-pts" id="pts-study">0/13</span>
+    <span class="sh-pts" id="pts-study">0/18</span>
   </div>
   <div id="tasks-study"></div>
 </div>
@@ -450,6 +425,27 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
   <div class="redeem-overview" id="shopRedeemTop"></div>
   <div id="shopList"></div>
   <div class="redeem-overview" id="shopRedeemBottom"></div>
+</div>
+
+<!-- Data Mgmt (底部) -->
+<div id="sec-settings">
+  <div class="data-mgmt" id="dataMgmt">
+    <div class="data-info" id="dataInfo">📦 历史记录：<b>0</b> 天 ｜ 备份状态：<span id="backupStatus">--</span></div>
+    <div class="data-btns">
+      <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
+      <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
+      <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="copyBackup()">📋 复制数据备份</button>
+      <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="pasteBackup()">📤 粘贴数据恢复</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
+  </div>
+  <div class="recovery-guide" id="recoveryGuide">
+    <div style="font-weight:700;margin-bottom:4px">🔍 数据恢复指引</div>
+    <div style="margin-bottom:4px">如果历史记录突然消失，先检查数据是否还在：</div>
+    手机浏览器地址栏输入：<br>
+    <code>javascript:void(prompt('历史记录',JSON.stringify(JSON.parse(localStorage.fxc_records_v3||'{}'),null,2)))</code><br>
+    <span style="color:var(--sub)">拷贝整行→粘贴到地址栏→回车→看弹窗。若有数据则文件还在，可导出备份再恢复。</span>
+  </div>
 </div>
 
 <!-- Reset -->
@@ -622,15 +618,17 @@ const TASKS = {
     {id:'e4', name:'汉字默写', desc:'汉字默写全部正确', pts:2},
     {id:'e5', name:'拼音启蒙', desc:'零基础循序渐进跟读、认读，每日坚持认真学习', pts:2},
     {id:'e6', name:'阅读打卡', desc:'绘本/分级读物精读完成，按要求做视频打卡记录', pts:2},
+    {id:'e7', name:'可汗学院英语', desc:'完成可汗学院英语学习，认真跟读练习', pts:3},
+    {id:'e8', name:'画画', desc:'认真完成一幅画作，发挥创造力', pts:2},
   ]
 };
 
 // 「其他加分」独立常量：不属于任何大项，展示时放在提交按钮前；雷达图统计时自动归入社交
 const BONUS_TASK = {id:'c5', name:'其他加分', desc:'当天表现特别棒的其他事项（由家长填写并评分）', pts:5, isBonus:true};
 
-// 满分：安全5 + 健康6 + 习惯20 + 社交8 + 学习13 = 52；其他加分弹性不计入基础满分
-const MAX_SCORE = 52;
-const SECTION_MAX = {safety:5, health:6, habit:20, social:8, study:13};
+// 满分：安全5 + 健康6 + 习惯20 + 社交8 + 学习18 = 57；其他加分弹性不计入基础满分
+const MAX_SCORE = 57;
+const SECTION_MAX = {safety:5, health:6, habit:20, social:8, study:18};
 
 // Shop data
 const KEY_SHOP_PTS = 'fxc_shop_pts_v2';
