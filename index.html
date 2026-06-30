@@ -263,18 +263,6 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 .data-btn{background:var(--card);border:2px solid var(--blue);color:var(--blue);border-radius:16px;padding:5px 7px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:3px}
 .data-btn.danger{border-color:var(--red);color:var(--red)}
 .data-btn.backup{border-color:var(--green);color:var(--green)}
-/* GitHub 同步状态 */
-.sync-status{text-align:center;margin:6px 0;font-size:11px;color:var(--sub)}
-.sync-status.ok{color:var(--green)}
-.sync-status.err{color:var(--red)}
-.sync-status.syncing{color:var(--blue);animation:pulse-sync 1.5s infinite}
-@keyframes pulse-sync{0%,100%{opacity:1}50%{opacity:.5}}
-/* PAT 配置 */
-.pat-setup{margin:6px 0;display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap}
-.pat-setup input{width:200px;border:1.5px solid #ddd;border-radius:8px;padding:4px 8px;font-size:12px;outline:none;text-align:center}
-.pat-setup input:focus{border-color:var(--blue)}
-.pat-setup .pat-save{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer}
-.pat-setup .pat-clear{background:#f0f0f0;border:none;color:var(--sub);border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
 #importFile{display:none}
 /* 提示引导 */
 .recovery-guide{text-align:center;margin:0 14px 12px;padding:10px;background:#E3F2FD;border-radius:10px;font-size:11px;color:var(--blue);line-height:1.6;display:none}
@@ -283,6 +271,19 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 /* Reset */
 .reset-area{text-align:center;padding:0 14px 8px;display:none}
 .reset-btn{background:none;border:1px solid #ddd;color:#ccc;border-radius:8px;padding:5px 14px;font-size:11px;cursor:pointer}
+
+/* GitHub Sync */
+.github-config{margin:8px 0;padding:10px 12px;background:#f6f8fa;border-radius:12px;border:1px solid #d0d7de}
+.github-config .gc-title{font-size:12px;font-weight:700;color:#24292f;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.github-config .gc-row{display:flex;gap:6px;margin-bottom:6px}
+.github-config .gc-input{flex:1;border:1.5px solid #d0d7de;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;font-family:monospace}
+.github-config .gc-input:focus{border-color:var(--blue)}
+.github-config .gc-btn{flex-shrink:0;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer}
+.github-config .gc-btn.sync{background:var(--green)}
+.github-config .gc-btn.pull{background:var(--purple)}
+.github-config .gc-status{font-size:10px;color:var(--sub);margin-top:2px;min-height:14px}
+.github-config .gc-status.ok{color:var(--green)}
+.github-config .gc-status.err{color:var(--red)}
 </style>
 </head>
 <body>
@@ -443,17 +444,23 @@ body{font-family:-apple-system,'PingFang SC',sans-serif;background:var(--bg);col
 <div id="sec-settings">
   <div class="data-mgmt" id="dataMgmt">
     <div class="data-info" id="dataInfo">📦 历史记录：<b>0</b> 天 ｜ 备份状态：<span id="backupStatus">--</span></div>
-    <div class="sync-status" id="syncStatus">☁️ GitHub同步：<span>--</span></div>
-    <div class="pat-setup" id="patSetup">
-      <input type="password" id="patInput" placeholder="输入 GitHub Token (只读权限)" onfocus="this.type='text'" onblur="if(!this.value)this.type='password'">
-      <button class="pat-save" onclick="saveGitHubPat()">💾 保存</button>
-      <button class="pat-clear" onclick="clearGitHubPat()">清空</button>
-    </div>
     <div class="data-btns">
       <button class="data-btn backup" onclick="exportAllData()">💾 导出全部数据</button>
       <button class="data-btn" onclick="document.getElementById('importFile').click()">📥 导入数据恢复</button>
       <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="copyBackup()">📋 复制数据备份</button>
       <button class="data-btn" style="border-color:var(--blue);color:var(--blue)" onclick="pasteBackup()">📤 粘贴数据恢复</button>
+    </div>
+    <div class="github-config">
+      <div class="gc-title">🐙 GitHub 云端同步</div>
+      <div class="gc-row">
+        <input type="password" class="gc-input" id="githubToken" placeholder="输入 GitHub Token (ghp_...)" autocomplete="off">
+        <button class="gc-btn" onclick="saveGithubToken()">💾 保存</button>
+      </div>
+      <div class="gc-row">
+        <button class="gc-btn sync" onclick="syncToGithub()">☁️ 推送到云端</button>
+        <button class="gc-btn pull" onclick="pullFromGithub()">⬇️ 从云端恢复</button>
+      </div>
+      <div class="gc-status" id="githubStatus"></div>
     </div>
     <input type="file" id="importFile" accept=".json" onchange="importAllData(this)">
   </div>
@@ -688,14 +695,12 @@ function saveRecords(r){
   localStorage.setItem(KEY_RECORDS, JSON.stringify(r)); 
   try { localStorage.setItem(KEY_RECORDS_BACKUP, JSON.stringify(r)); } catch(e){}
   updateDataInfo();
-  syncToGitHub(); // 云端自动备份（异步，不阻塞）
 }
 function loadRedeems(){ try{ return JSON.parse(localStorage.getItem(KEY_REDEEMS)||'[]'); }catch(e){ return []; } }
 function saveRedeems(r){ 
   localStorage.setItem(KEY_REDEEMS, JSON.stringify(r)); 
   try { localStorage.setItem(KEY_REDEEMS_BACKUP, JSON.stringify(r)); } catch(e){}
   updateDataInfo();
-  syncToGitHub(); // 云端自动备份（异步，不阻塞）
 }
 
 // 兼容旧格式：bool true → 该任务满分
@@ -1104,6 +1109,8 @@ function submitToday(){
   saveRecords(records);
   showToast(score>=MAX_SCORE?'🎉 今日满分！超棒！':`✅ 提交成功！今天得 ${score} 分`);
   renderAll();
+  // 自动同步到 GitHub（如果有 Token）
+  if(getGithubToken()){ setTimeout(function(){ syncToGithub(); }, 600); }
 }
 
 function editToday(){
@@ -1466,216 +1473,6 @@ function confirmReset(){
   }
 }
 
-// =========== GITHUB 自动云端同步 ===========
-const KEY_GITHUB_PAT = 'fxc_github_pat_v1';
-const KEY_SYNC_TIME = 'fxc_sync_time_v1';
-const GITHUB_OWNER = 'pophotpop';
-const GITHUB_REPO = 'fxc-checkin-better';
-const GITHUB_PATH = 'data/checkin-data.json';
-
-function getPat(){ return localStorage.getItem(KEY_GITHUB_PAT)||''; }
-function hasPat(){ return !!getPat(); }
-
-function saveGitHubPat(){
-  const pat=document.getElementById('patInput').value.trim();
-  if(!pat){ showToast('请输入Token'); return; }
-  if(!pat.match(/^(ghp_|github_pat_)/)){
-    showToast('⚠️ Token格式不匹配，请复制完整'); return;
-  }
-  localStorage.setItem(KEY_GITHUB_PAT, pat);
-  document.getElementById('patInput').value='';
-  document.getElementById('patSetup').style.display='none';
-  showToast('✅ GitHub Token已保存');
-  updateSyncUI('✅ 已配置，打卡自动同步', true);
-  testSync();
-}
-
-function clearGitHubPat(){
-  if(!confirm('确定清除GitHub Token？清除后数据不再自动云端备份。')) return;
-  localStorage.removeItem(KEY_GITHUB_PAT);
-  localStorage.removeItem(KEY_SYNC_TIME);
-  document.getElementById('patSetup').style.display='flex';
-  updateSyncUI('⚙️ 未配置云端同步');
-}
-
-function buildSyncData(){
-  return {
-    records: loadRecords(),
-    redeems: loadRedeems(),
-    shopPts: loadShopPts(),
-    updatedAt: new Date().toISOString()
-  };
-}
-
-function updateSyncUI(msg, isOk){
-  const el=document.getElementById('syncStatus');
-  const span=el.querySelector('span');
-  el.className='sync-status';
-  if(isOk===true){ el.className='sync-status ok'; }
-  else if(isOk===false){ el.className='sync-status err'; }
-  span.textContent=msg;
-}
-
-async function callGitHubAPI(method, path, body){
-  const pat=getPat();
-  if(!pat) throw new Error('TOKEN_MISSING');
-  const url='https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/contents/'+path;
-  const headers={
-    'Authorization': 'Bearer '+pat,
-    'Accept': 'application/vnd.github.v3+json',
-    'Content-Type': 'application/json'
-  };
-  const fetchOpts={method, headers};
-  if(body) fetchOpts.body=JSON.stringify(body);
-  const controller=new AbortController();
-  const timeout=setTimeout(function(){ controller.abort(); }, 5000);
-  try{
-    const resp=await fetch(url, Object.assign({}, fetchOpts, {signal:controller.signal}));
-    clearTimeout(timeout);
-    if(!resp.ok){
-      if(resp.status===404) return null;
-      if(resp.status===409) throw new Error('CONFLICT');
-      if(resp.status===401||resp.status===403) throw new Error('TOKEN_INVALID');
-      var txt=''; try{ txt=await resp.text(); }catch(e){}
-      throw new Error('HTTP '+resp.status+(txt?' '+txt.substring(0,80):''));
-    }
-    return await resp.json();
-  }finally{ clearTimeout(timeout); }
-}
-
-async function syncToGitHub(){
-  if(!hasPat()) return;
-  var localData=buildSyncData();
-  var el=document.getElementById('syncStatus');
-  el.className='sync-status syncing';
-  updateSyncUI('☁️ 同步中...');
-  
-  for(var attempt=1; attempt<=3; attempt++){
-    try{
-      var remoteResp=await callGitHubAPI('GET', GITHUB_PATH);
-      var remoteData=null, sha=null;
-      if(remoteResp){
-        sha=remoteResp.sha;
-        try{
-          var decoded=atob(remoteResp.content.replace(/\s/g,''));
-          remoteData=JSON.parse(decoded);
-        }catch(e){ remoteData=null; }
-      }
-      
-      // Merge: remote as base, local values take priority for same keys
-      var merged;
-      if(remoteData){
-        merged=Object.assign({}, remoteData, localData);
-        merged.updatedAt=new Date().toISOString();
-        if(remoteData.records){
-          merged.records=Object.assign({}, remoteData.records, localData.records);
-        }
-        if(remoteData.shopPts){
-          merged.shopPts=Object.assign({}, remoteData.shopPts, localData.shopPts);
-        }
-        // Deduplicate redeems
-        var allRedeems=(remoteData.redeems||[]).concat(localData.redeems||[]);
-        var seen=new window.Set();
-        merged.redeems=allRedeems.filter(function(r){
-          var key=r.date+'|'+r.name+'|'+r.pts;
-          if(seen.has(key)) return false;
-          seen.add(key); return true;
-        });
-      } else {
-        merged=localData;
-      }
-      
-      var contentB64=btoa(unescape(encodeURIComponent(JSON.stringify(merged))));
-      var putBody={message:'sync: checkin data', content:contentB64};
-      if(sha) putBody.sha=sha;
-      
-      await callGitHubAPI('PUT', GITHUB_PATH, putBody);
-      localStorage.setItem(KEY_SYNC_TIME, new Date().toISOString());
-      updateSyncUI('✅ 同步完成 '+formatSyncTime(), true);
-      return;
-    }catch(e){
-      if(e.message==='CONFLICT' && attempt<3){
-        await new Promise(function(r){ setTimeout(r, 800*attempt); });
-        continue;
-      }
-      if(e.message==='TOKEN_INVALID'){
-        updateSyncUI('⚠️ Token失效，请重新配置', false); return;
-      }
-      if(attempt===3){
-        updateSyncUI('⚠️ 同步失败，下次重试', false);
-      }
-      return;
-    }
-  }
-}
-
-function formatSyncTime(){
-  var t=localStorage.getItem(KEY_SYNC_TIME);
-  if(!t) return '';
-  var d=new Date(t);
-  var h=String(d.getHours()).padStart(2,'0');
-  var m=String(d.getMinutes()).padStart(2,'0');
-  return h+':'+m;
-}
-
-async function restoreFromGitHub(){
-  if(!hasPat()) return false;
-  try{
-    var resp=await callGitHubAPI('GET', GITHUB_PATH);
-    if(!resp) return false;
-    var decoded=atob(resp.content.replace(/\s/g,''));
-    var data=JSON.parse(decoded);
-    if(!data||!data.records||Object.keys(data.records).length===0) return false;
-    saveRecords(data.records);
-    if(data.redeems) saveRedeems(data.redeems);
-    if(data.shopPts) saveShopPts(data.shopPts);
-    localStorage.setItem(KEY_SYNC_TIME, new Date().toISOString());
-    updateSyncUI('✅ 已从云端恢复 '+Object.keys(data.records).length+' 天', true);
-    return true;
-  }catch(e){
-    updateSyncUI('⚠️ 云端恢复失败', false);
-    return false;
-  }
-}
-
-async function testSync(){
-  if(!hasPat()) return;
-  try{
-    var resp=await callGitHubAPI('GET', GITHUB_PATH);
-    if(resp){
-      var decoded=atob(resp.content.replace(/\s/g,''));
-      var data=JSON.parse(decoded);
-      var n=data.records?Object.keys(data.records).length:0;
-      updateSyncUI('✅ 已连接 · 云端 '+n+' 天', true);
-    } else {
-      updateSyncUI('✅ 已连接 · 云端无数据(首次)', true);
-      localStorage.removeItem(KEY_SYNC_TIME);
-    }
-  }catch(e){
-    if(e.message==='TOKEN_INVALID'){
-      updateSyncUI('⚠️ Token无效，请重新配置', false);
-    } else {
-      updateSyncUI('⚠️ 连接失败，检查网络', false);
-    }
-  }
-}
-
-function initGitHubSync(){
-  var patSetup=document.getElementById('patSetup');
-  if(hasPat()){
-    patSetup.style.display='none';
-    var lastSync=localStorage.getItem(KEY_SYNC_TIME);
-    if(lastSync){
-      updateSyncUI('✅ 上次同步: '+formatSyncTime(), true);
-    } else {
-      updateSyncUI('⚙️ 已配置，打卡时自动同步');
-    }
-  } else {
-    patSetup.style.display='flex';
-    updateSyncUI('⚙️ 未配置云端同步');
-  }
-}
-
 // =========== 数据管理 ===========
 function updateDataInfo(){
   const records=loadRecords();
@@ -1832,6 +1629,310 @@ function importAllData(input){
   input.value=''; // 允许重复导入同一文件
 }
 
+// =========== GitHub 云端同步 ===========
+const GH_OWNER = 'pophotpop';
+const GH_REPO = 'fxc-checkin-better';
+const GH_PATH = 'data/checkin-data.json';
+const KEY_GH_TOKEN = 'fxc_gh_token';
+
+function getGithubToken(){
+  return localStorage.getItem(KEY_GH_TOKEN) || '';
+}
+
+function saveGithubToken(){
+  var token = document.getElementById('githubToken').value.trim();
+  if(!token){ setGhStatus('请输入 Token','err'); return; }
+  if(!token.startsWith('ghp_') && !token.startsWith('github_pat_')){
+    setGhStatus('⚠️ Token 格式可能不正确，应以 ghp_ 或 github_pat_ 开头','err'); 
+    return;
+  }
+  localStorage.setItem(KEY_GH_TOKEN, token);
+  document.getElementById('githubToken').value = '';
+  setGhStatus('✅ Token 已保存，开始自动测试连接...','ok');
+  // 自动测试连接
+  setTimeout(function(){ testGhConnection(); }, 500);
+}
+
+function setGhStatus(msg, cls){
+  var el = document.getElementById('githubStatus');
+  el.textContent = msg;
+  el.className = 'gc-status ' + (cls||'');
+}
+
+function getGhHeaders(){
+  var token = getGithubToken();
+  if(!token) return null;
+  return {
+    'Authorization': 'token ' + token,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github.v3+json'
+  };
+}
+
+function testGhConnection(){
+  var headers = getGhHeaders();
+  if(!headers){ setGhStatus('请先保存 GitHub Token','err'); return; }
+  setGhStatus('⏳ 正在测试连接...','');
+  
+  fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO, {headers:headers})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.message==='Bad credentials'){
+        setGhStatus('❌ Token 无效或已过期，请重新生成','err');
+        localStorage.removeItem(KEY_GH_TOKEN);
+        return;
+      }
+      if(data.full_name){
+        setGhStatus('✅ 连接成功！仓库：' + data.full_name,'ok');
+      } else if(data.message){
+        setGhStatus('⚠️ ' + data.message,'err');
+      } else {
+        setGhStatus('✅ 连接成功','ok');
+      }
+    })
+    .catch(function(e){
+      setGhStatus('❌ 网络错误，请检查网络连接','err');
+    });
+}
+
+function syncToGithub(retryCount){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  var headers = getGhHeaders();
+  if(!headers){ setGhStatus('请先保存 GitHub Token','err'); return; }
+  if(retryCount === undefined) retryCount = 0;
+
+  setGhStatus('⏳ 正在同步到云端' + (retryCount>0?' (重试' + retryCount + '/2)':'') + '...','');
+
+  // 打包数据
+  var data = {
+    syncedAt: new Date().toISOString(),
+    records: loadRecords(),
+    redeems: loadRedeems(),
+    shopPts: loadShopPts(),
+  };
+  var content = JSON.stringify(data, null, 2);
+  var b64 = btoa(unescape(encodeURIComponent(content)));
+
+  // 超时控制
+  var aborter = new AbortController();
+  var timeoutId = setTimeout(function(){ aborter.abort(); }, 15000);
+
+  // 先获取当前文件的 sha（如果存在）
+  fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_PATH, {headers:headers, signal:aborter.signal})
+    .then(function(r){
+      clearTimeout(timeoutId);
+      if(r.status===404) return {sha:null};
+      // 409 conflict detected at GET stage (edge case)
+      return r.json();
+    })
+    .then(function(fileInfo){
+      if(fileInfo.message==='Bad credentials'){
+        setGhStatus('❌ Token 无效，请重新生成','err');
+        showToast('❌ Token无效');
+        return Promise.reject('bad token');
+      }
+      var body = {
+        message: 'Update check-in data [' + todayStr() + ']',
+        content: b64,
+      };
+      if(fileInfo.sha){ body.sha = fileInfo.sha; }
+
+      // PUT 请求也加超时
+      var putAborter = new AbortController();
+      var putTimeoutId = setTimeout(function(){ putAborter.abort(); }, 15000);
+
+      return fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_PATH, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(body),
+        signal: putAborter.signal
+      })
+      .then(function(r){
+        clearTimeout(putTimeoutId);
+        // 409 conflict: automatically retry once
+        if(r.status===409 && retryCount < 2){
+          setGhStatus('⏳ 检测到并发冲突，自动重试...','');
+          // 稍等后重试
+          return new Promise(function(resolve){
+            setTimeout(function(){
+              resolve(syncToGithub(retryCount + 1));
+            }, 1200);
+          });
+        }
+        if(r.status===409){
+          // 已经重试过2次了，不再重试
+          throw new Error('conflict_exhausted');
+        }
+        return r.json();
+      })
+      .then(function(result){
+        if(!result) return; // retry in progress
+        if(result.content){
+          setGhStatus('✅ 同步成功！' + todayStr() + ' ' + new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),'ok');
+          showToast('☁️ 数据已同步到云端');
+        } else if(result.message){
+          setGhStatus('❌ ' + result.message,'err');
+          showToast('❌ 同步失败');
+        }
+      })
+      .catch(function(e){
+        clearTimeout(putTimeoutId);
+        if(e.message==='conflict_exhausted'){
+          setGhStatus('❌ 同步冲突（已重试2次仍失败），请稍后重新同步','err');
+          showToast('❌ 同步冲突，请稍后重试');
+          return;
+        }
+        throw e;
+      });
+    })
+    .catch(function(e){
+      clearTimeout(timeoutId);
+      if(e==='bad token') return;
+      if(e.name==='AbortError'){
+        setGhStatus('❌ 同步超时（超过15秒），请检查网络后重试','err');
+        showToast('❌ 同步超时');
+        return;
+      }
+      setGhStatus('❌ 网络错误，请稍后重试','err');
+      showToast('❌ 网络错误');
+    });
+}
+
+function pullFromGithub(){
+  if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
+  var headers = getGhHeaders();
+  if(!headers){ setGhStatus('请先保存 GitHub Token','err'); return; }
+
+  if(!confirm('⚠️ 将从 GitHub 云端拉取数据，与本地数据智能合并（同一天保留得分更高的那份）。\n\n确定拉取？')){
+    return;
+  }
+
+  setGhStatus('⏳ 正在从云端拉取...','');
+
+  // 超时控制
+  var aborter = new AbortController();
+  var timeoutId = setTimeout(function(){ aborter.abort(); }, 15000);
+
+  fetch('https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/contents/'+GH_PATH, {headers:headers, signal:aborter.signal})
+    .then(function(r){
+      clearTimeout(timeoutId);
+      if(r.status===404){
+        setGhStatus('⚠️ 云端暂无备份数据','');
+        showToast('⚠️ 云端暂无数据');
+        return Promise.reject('no data');
+      }
+      return r.json();
+    })
+    .then(function(fileInfo){
+      if(fileInfo.message==='Bad credentials'){
+        setGhStatus('❌ Token 无效','err');
+        return Promise.reject('bad token');
+      }
+      if(!fileInfo.content){
+        setGhStatus('⚠️ 云端数据为空','');
+        return Promise.reject('no content');
+      }
+      // 解码 base64
+      var jsonStr = decodeURIComponent(escape(atob(fileInfo.content.replace(/\s/g,''))));
+      var data = JSON.parse(jsonStr);
+      
+      // ===== 智能合并：本地 + 云端取并集，同一天取分数更高的 =====
+      var localRecords = loadRecords();
+      var cloudRecords = data.records || {};
+      var mergedRecords = {};
+      var newDays = 0, upgradedDays = 0, localKeep = 0;
+      
+      // 收集所有日期
+      var allDates = {};
+      Object.keys(localRecords).forEach(function(d){ allDates[d] = true; });
+      Object.keys(cloudRecords).forEach(function(d){ allDates[d] = true; });
+      
+      Object.keys(allDates).forEach(function(d){
+        var local = localRecords[d];
+        var cloud = cloudRecords[d];
+        if(local && cloud){
+          // 两边都有：取分数更高的那份
+          if(cloud.score > local.score){
+            mergedRecords[d] = cloud;
+            upgradedDays++;
+          } else {
+            mergedRecords[d] = local;
+            localKeep++;
+          }
+        } else if(cloud && !local){
+          mergedRecords[d] = cloud;
+          newDays++;
+        } else {
+          mergedRecords[d] = local;
+          localKeep++;
+        }
+      });
+      
+      saveRecords(mergedRecords);
+      
+      var mergeDetail = '新增 '+newDays+' 天，云端更新 '+upgradedDays+' 天，本地保留 '+localKeep+' 天';
+      
+      // 合并兑换记录
+      if(data.redeems && data.redeems.length>0){
+        var localRedeems = loadRedeems();
+        var localRedeemKeys = {};
+        localRedeems.forEach(function(r){ localRedeemKeys[r.date+'_'+r.id+'_'+r.pts] = true; });
+        var mergedRedeems = localRedeems.slice();
+        data.redeems.forEach(function(r){
+          var key = r.date+'_'+r.id+'_'+r.pts;
+          if(!localRedeemKeys[key]){
+            mergedRedeems.push(r);
+          }
+        });
+        saveRedeems(mergedRedeems);
+      }
+      if(data.shopPts){
+        saveShopPts(data.shopPts);
+      }
+      
+      setGhStatus('✅ 合并完成：' + mergeDetail + ' (' + (data.syncedAt||'未知时间').slice(0,10) + ')','ok');
+      showToast('✅ ' + mergeDetail);
+      
+      // 重新初始化
+      var rec = loadRecords()[currentDate];
+      checked = {}; bonusDesc = '';
+      if(rec){
+        Object.values(TASKS).flat().forEach(function(t){ checked[t.id]=getDoneVal(rec.done,t); });
+        checked['c5']=rec.done&&rec.done['c5']!==undefined?Number(rec.done['c5']):0;
+        bonusDesc=rec.bonusDesc||'';
+      } else {
+        Object.values(TASKS).flat().forEach(function(t){ checked[t.id]=t.isBonus?0:t.pts; });
+        checked['c5']=0;
+      }
+      renderAll();
+      updateDataInfo();
+    })
+    .catch(function(e){
+      clearTimeout(timeoutId);
+      if(e==='bad token'||e==='no data'||e==='no content') return;
+      if(e.name==='AbortError'){
+        setGhStatus('❌ 拉取超时（超过15秒），请检查网络后重试','err');
+        showToast('❌ 拉取超时');
+        return;
+      }
+      setGhStatus('❌ 拉取失败，请检查网络','err');
+      showToast('❌ 拉取失败');
+    });
+}
+
+// 页面加载时回显已保存的 Token 状态
+function initGithubStatus(){
+  var token = getGithubToken();
+  if(token){
+    var masked = token.slice(0,7) + '****' + token.slice(-4);
+    setGhStatus('🔑 已保存 Token：' + masked + ' | ', 'ok');
+    // 追加一个测试链接
+    document.getElementById('githubStatus').innerHTML += '<a href="javascript:void(0)" onclick="testGhConnection()" style="color:var(--blue);font-size:10px">测试连接</a>';
+  } else {
+    setGhStatus('💡 保存 Token 后可用 GitHub 云端备份','');
+  }
+}
+
 // 一键重建6月1-8日数据（全部满分52分，其他加分0）
 function rebuildJuneData(){
   if(!isAdmin()){ showToast('🔒 请先解锁'); return; }
@@ -1855,27 +1956,16 @@ function rebuildJuneData(){
 // 初始化：打开页面时默认给今天所有普通项满分，bonus项为0
 (function init(){
   // 自动恢复：检测主数据是否丢丢失，尝试从备份恢复
-  var recovered=tryAutoRecover();
-  
-  // 如果本地无数据，尝试从GitHub云端恢复
-  if(!recovered && hasPat()){
-    var mainData=localStorage.getItem(KEY_RECORDS);
-    if(!mainData||mainData==='{}'){
-      restoreFromGitHub().then(function(ok){
-        if(ok){ console.log('🔄 已从GitHub云端恢复数据'); }
-      });
-    }
-  }
-  
+  const recovered=tryAutoRecover();
   if(recovered) console.log('🔄 自动从备份恢复了数据');
   
-  var rec=loadRecords()[currentDate];
+  const rec=loadRecords()[currentDate];
   if(rec){
-    Object.values(TASKS).flat().forEach(function(t){ checked[t.id]=getDoneVal(rec.done,t); });
+    Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=getDoneVal(rec.done,t); });
     checked['c5']=rec.done&&rec.done['c5']!==undefined?Number(rec.done['c5']):0;
     bonusDesc=rec.bonusDesc||'';
   } else {
-    Object.values(TASKS).flat().forEach(function(t){ checked[t.id]=t.isBonus?0:t.pts; });
+    Object.values(TASKS).flat().forEach(t=>{ checked[t.id]=t.isBonus?0:t.pts; });
     checked['c5']=0;
   }
 })();
@@ -1883,8 +1973,8 @@ document.getElementById('datePicker').value=currentDate;
 updateModeUI();
 renderAll();
 updateDataInfo();
-initGitHubSync(); // 初始化GitHub同步状态
 updateDateWarning();
+initGithubStatus();
 // 延迟检查周总结弹窗，避免和页面加载冲突
 setTimeout(checkWeeklyPopup, 800);
 </script>
